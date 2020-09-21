@@ -1,0 +1,23 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="CucumberTest" type="JUnit" factoryName="JUnit" nameIsGenerated="true">
+    <module name="integration-test" />
+    <useClassPathOnly />
+    <extension name="coverage">
+      <pattern>
+        <option name="PATTERN" value="franz.test.*" />
+        <option name="ENABLED" value="true" />
+      </pattern>
+    </extension>
+    <option name="PACKAGE_NAME" value="franz.test" />
+    <option name="MAIN_CLASS_NAME" value="franz.test.CucumberTest" />
+    <option name="METHOD_NAME" value="" />
+    <option name="TEST_OBJECT" value="class" />
+    <option name="PARAMETERS" value="" />
+    <envs>
+      <env name="TEST_CONFIG" value="cucumbertest-intellij.conf" />
+    </envs>
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

@@ -1,0 +1,18 @@
+.imgup {
+  background: url('/img/arrow-up.svg') no-repeat center !important;
+}
+.imgup:active {
+  background-color: #3e8e41;
+  box-shadow: 0 5px #666;
+  background: url('/img/arrow-up.svg') no-repeat center !important;
+  transform: translateY(4px);
+}
+.imgdown {
+  background: url('/img/arrow-down.svg') no-repeat center !important;
+}
+.imgdown:active {
+  background-color: #3e8e41;
+  box-shadow: 0 5px #666;
+  background: url('/img/arrow-down.svg') no-repeat center !important;
+  transform: translateY(4px);
+}

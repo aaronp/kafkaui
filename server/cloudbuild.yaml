@@ -1,0 +1,79 @@
+steps:
+  - id: 'restore cache'
+    name: 'gcr.io/$PROJECT_ID/restore_cache'
+    args:
+      - '--bucket=gs://sbt_cache_franz'
+      - '--key=build-cache-$( checksum build.sbt )'
+    waitFor: ['-']
+
+  - id: 'check cache'
+    name: 'ubuntu'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "pwd is"
+        pwd
+        echo "ls /workspace/.ivy2"
+        ls -lah /workspace/.ivy2  | wc -l
+    waitFor: ['restore cache']
+
+  - id: 'compile'
+    name: 'gcr.io/$PROJECT_ID/scala-sbt'
+    args: ['-ivy', '/workspace/.ivy2', 'cloudBuild']
+    waitFor: ['restore cache']
+
+  - id: 'test'
+    name: 'gcr.io/$PROJECT_ID/scala-sbt'
+    args: ['-ivy', '/workspace/.ivy2', 'test']
+    waitFor: ['compile']
+
+  - id: 'check files again'
+    name: 'ubuntu'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        pwd
+        ls -lah
+    waitFor: ['compile']
+
+  - id: 'save cache'
+    name: 'gcr.io/$PROJECT_ID/save_cache'
+    args:
+      - --bucket=gs://sbt_cache_franz
+      - --key=build-cache-$( checksum build.sbt )
+      - --path=/workspace/.ivy2/cache
+      - --no-clobber
+    waitFor: ['compile']
+
+  - id: 'debug output'
+    name: 'ubuntu'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        pwd
+        find . -name '*.jar'
+    waitFor: ['compile']
+
+  - id: 'prepare docker dir'
+    name: 'ubuntu'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        mv ./target/docker/app.jar deploy/src/main/resources
+        mv ./target/docker/web deploy/src/main/resources
+        find deploy/src/main/resources -print
+    waitFor: ['compile']
+
+
+  - id: 'docker build --tag ...'
+    name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '--tag=gcr.io/$PROJECT_ID/franz', 'deploy/src/main/resources']
+    waitFor: ['prepare docker dir']
+options:
+  machineType: 'N1_HIGHCPU_8'
+images: ['gcr.io/$PROJECT_ID/franz']
+tags: ['cloud-builders-community']

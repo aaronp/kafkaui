@@ -1,0 +1,6 @@
+See the 'ExtractJar', which is used by 'StaticFileRoutes'.
+
+This project packages up its web resources (css, html, etc) to be served at runtime.
+
+The start-up process checks if this known file name exists in the specified web directory, and if is doesn't,
+the jar containing this file has its 'web' contents extracted to that directory
