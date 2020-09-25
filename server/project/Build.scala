@@ -15,7 +15,7 @@ object Build {
     val calibanVersion = "0.6.0"
 
     val monix = List("monix", "monix-execution", "monix-eval", "monix-reactive", "monix-tail")
-    val monixVersion = "3.2.1"
+    val monixVersion = "3.2.2"
 
     val typesafeConfig: ModuleID = "com.typesafe" % "config" % "1.4.0"
 
