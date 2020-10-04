@@ -20,4 +20,4 @@ export JVM_ARGS="$JVM_ARGS -Dlogback.configurationFile=$LOGBACK_LOCATION"
 
 echo "Starting w/ $JVM_ARGS on $IPADDR with $# args $@ (first is '$1')"
 
-java ${JVM_ARGS} -cp /app/config:/app/lib/app.jar franz.app.MainEntryPoint $@ app-docker.conf
+java ${JVM_ARGS} -cp /app/config:/app/lib/app.jar franz.rest.MainZIO $@ app-docker.conf

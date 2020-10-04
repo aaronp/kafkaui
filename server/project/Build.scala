@@ -11,11 +11,7 @@ object Build {
 
   object deps {
 
-    val Http4sVersion = "0.21.4"
-    val calibanVersion = "0.6.0"
-
-    val monix = List("monix", "monix-execution", "monix-eval", "monix-reactive", "monix-tail")
-    val monixVersion = "3.2.2"
+    val Http4sVersion = "0.21.7"
 
     val typesafeConfig: ModuleID = "com.typesafe" % "config" % "1.4.0"
 
@@ -23,13 +19,13 @@ object Build {
     val logback = "ch.qos.logback" % "logback-classic" % "1.2.3"
     val logging = List(scalaLogging, logback, "org.slf4j" % "slf4j-api" % "1.7.30")
 
-    val zioVersion = "1.0.0-RC18-2"
+    val zioVersion = "1.0.1"
     val zio = List(
-      "dev.zio" %% "zio-interop-cats" % "2.0.0.0-RC12",
+      "dev.zio" %% "zio-interop-cats" % "2.1.4.0",
       "dev.zio" %% "zio" % zioVersion,
       "dev.zio" %% "zio-streams" % zioVersion,
-      "dev.zio" %% "zio-test"          % zioVersion % "test",
-      "dev.zio" %% "zio-test-sbt"      % zioVersion % "test")
+      "dev.zio" %% "zio-test" % zioVersion % "test",
+      "dev.zio" %% "zio-test-sbt" % zioVersion % "test")
 
     val circeVersion = "0.13.0"
     val circeGenExtrasVersion = "0.13.0"
@@ -62,10 +58,6 @@ object Build {
       Nil
     }
 
-    def caliban = List("com.github.ghostdogpr" %% "caliban" % calibanVersion,
-      "com.github.ghostdogpr" %% "caliban-cats" % calibanVersion,
-      "com.github.ghostdogpr" %% "caliban-http4s" % calibanVersion)
-
     def rest: List[ModuleID] = {
       zio ++
         logging ++
@@ -73,12 +65,11 @@ object Build {
         Seq(
           typesafeConfig,
           "org.http4s" %% "http4s-blaze-server" % Http4sVersion,
-          "org.http4s" %% "http4s-blaze-client" % Http4sVersion,
           "org.http4s" %% "http4s-circe" % Http4sVersion,
+          "org.http4s" %% "http4s-blaze-client" % Http4sVersion,
           "org.http4s" %% "http4s-dsl" % Http4sVersion,
           scalaTest,
-          "org.specs2" %% "specs2-core" % "4.9.4" % Test,
-          "com.softwaremill.sttp.client" %% "core" % "2.1.5" % Test
+          "org.specs2" %% "specs2-core" % "4.9.4" % Test
         )
     }
 
@@ -90,26 +81,8 @@ object Build {
       }
     }
 
-    def db: immutable.Seq[ModuleID] = {
-      logging ++ zio ++
-        List(
-          typesafeConfig,
-          "com.github.aaronp" %% "mongo4m" % "0.0.3",
-          "com.github.aaronp" %% "dockerenv" % "0.5.4" % "test",
-          "com.github.aaronp" %% "dockerenv" % "0.5.4" % "test" classifier ("tests")
-        )
-    }
-
     def requestsScala = "com.lihaoyi" %% "requests" % "0.5.1"
 
-    def firestore: immutable.Seq[ModuleID] = {
-      logging ++ circe ++ zio ++
-        List(
-          requestsScala,
-          typesafeConfig,
-          "com.google.cloud" % "google-cloud-firestore" % "1.33.0"
-        )
-    }
   }
 
   def scalacSettings = {
@@ -151,6 +124,8 @@ object Build {
       IO.copyDirectory(webResourceDir.toFile, targetDir.resolve("web").toFile)
       IO.copy(List(restAssembly.toFile -> (targetDir.resolve("app.jar").toFile)))
       IO.copy(jsArtifacts.map(jsFile => jsFile.toFile -> (jsDir.resolve(jsFile.fileName).toFile)))
+      webResourceDir.resolve("css/touch.css").text = ""
+      webResourceDir.resolve("img/touch.css").text = ""
       this
     }
   }
@@ -166,5 +141,4 @@ object Build {
     val retVal = p.!
     require(retVal == 0, cmd.mkString("", " ", s" in dir ${inDir} returned $retVal"))
   }
-
 }

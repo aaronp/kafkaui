@@ -57,7 +57,5 @@ object HtmlHelper extends App {
       }
       snippet.linesIterator.zip(converted)
     }
-
   }
-
 }

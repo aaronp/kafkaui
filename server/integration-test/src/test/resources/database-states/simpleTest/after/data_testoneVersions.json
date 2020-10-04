@@ -1,1 +1,0 @@
-{"collectionName":"testoneVersions","latest":{"recordsById":{}},"versionSnapshot":{"versionedRecords":[{"id":"alpha","versions":[[0,{"data":true,"userId":"a@a.com","id":"alpha","version":0,"createdEpochMillis":1589373525392}]]},{"id":"beta","versions":[[0,{"data":[12,3],"userId":"a@a.com","id":"beta","version":0,"createdEpochMillis":1589373535736}]]}]}}

@@ -1,4 +1,4 @@
-import java.nio.file.Path
+import java.nio.file.{Path, Paths}
 
 import sbt.KeyRanks
 import sbtcrossproject.CrossPlugin.autoImport.{CrossType, crossProject}
@@ -64,25 +64,8 @@ lazy val root = (project in file("."))
     deploy,
     clientJS,
     clientJVM,
-    db,
-    firestore,
     integrationTest
   )
-
-lazy val db = (project in file("db"))
-  .settings(name := "db")
-  .settings(commonSettings: _*)
-  .settings(libraryDependencies ++= Build.deps.db)
-  .settings(parallelExecution in Test := false)
-  .dependsOn(clientJVM % "compile->compile;test->test")
-
-lazy val firestore = (project in file("firestore"))
-  .settings(name := "firestore")
-  .settings(commonSettings: _*)
-  .settings(libraryDependencies ++= Build.deps.firestore)
-  .settings(parallelExecution in Test := false)
-  .settings(testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework"))
-  .dependsOn(clientJVM % "compile->compile;test->test")
 
 lazy val rest = (project in file("rest"))
   .settings(
@@ -92,7 +75,6 @@ lazy val rest = (project in file("rest"))
   )
   .settings(commonSettings: _*)
   .dependsOn(clientJVM % "compile->compile;test->test")
-  .dependsOn(db % "compile->compile;test->test")
 
 lazy val deploy = project
   .in(file("deploy"))
@@ -113,9 +95,6 @@ lazy val clientCross = crossProject(JSPlatform, JVMPlatform)
   .in(file("client"))
   .settings(
     name := "client",
-    libraryDependencies ++= Build.deps.monix.map { art =>
-      "io.monix" %%% art % Build.deps.monixVersion
-    },
     //https://dzone.com/articles/5-useful-circe-feature-you-may-have-overlooked
     libraryDependencies ++= List(
       "com.github.aaronp" %%% "donovan" % "0.14.0",
@@ -154,9 +133,17 @@ lazy val application = project
   .settings(libraryDependencies ++= Build.deps.application)
   .dependsOn(rest % "compile->compile;test->test")
   .dependsOn(clientJVM % "compile->compile;test->test")
-  .dependsOn(db % "compile->compile;test->test")
-  .dependsOn(firestore % "compile->compile;test->test")
 
+
+lazy val clientBuild = taskKey[String]("Builds the client").withRank(KeyRanks.APlusTask)
+
+clientBuild := {
+  import sys.process._
+  val workDir = new java.io.File("../client")
+  val output = sys.process.Process(Seq("flutter", "build", "web"), workDir).!!
+  sLog.value.info(output)
+  output
+}
 
 lazy val cloudBuild = taskKey[Build.DockerResources]("Prepares the app for containerisation").withRank(KeyRanks.APlusTask)
 
@@ -168,7 +155,8 @@ cloudBuild := {
   val deployResourceDir = (resourceDirectory in(deploy, Compile)).value.toPath
 
   // contains the web resources
-  val webResourceDir: Path = (resourceDirectory in(rest, Compile)).value.toPath.resolve("web")
+  val _ = clientBuild.value
+  val webResourceDir: Path = Paths.get(baseDirectory.value.toURI).resolve("../client/build/web")
 
   val fullOptPath = (fullOptJS in(clientJS, Compile)).value.data.asPath
   val fastOptPath = (fastOptJS in(clientJS, Compile)).value.data.asPath
@@ -178,10 +166,10 @@ cloudBuild := {
     fullOptPath :: dependencyFiles
   }
 
-  val dir = baseDirectory.value / "target" / "docker"
-  val dockerTargetDir = dir.toPath.mkDirs()
+  val dockerTargetDir = (baseDirectory.value / "target" / "docker").toPath.mkDirs()
 
-  val resources = Build.DockerResources(deployResourceDir = deployResourceDir, //
+  val resources = Build.DockerResources(
+    deployResourceDir = deployResourceDir, //
     jsArtifacts = jsArtifacts, //
     webResourceDir = webResourceDir, //
     restAssembly = appAssembly.asPath, //
@@ -204,11 +192,7 @@ pomIncludeRepository := (_ => false)
 
 // To sync with Maven central, you need to supply the following information:
 pomExtra in Global := {
-  <url>https://github.com/$
-    {username}
-    /$
-    {repo}
-  </url>
+  <url>https://github.com/${username}/${repo}</url>
     <licenses>
       <license>
         <name>Apache 2</name>
@@ -217,15 +201,9 @@ pomExtra in Global := {
     </licenses>
     <developers>
       <developer>
-        <id>$
-          {username}
-        </id>
+        <id>${username}</id>
         <name>Aaron Pritzlaff</name>
-        <url>https://github.com/$
-          {username}
-          /$
-          {repo}
-        </url>
+        <url>https://github.com/${username}/${repo}</url>
       </developer>
     </developers>
 }

@@ -8,8 +8,6 @@ import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
 import eie.io._
 import franz.ui.ExtractJar
-import franz.users.Login
-import org.http4s.circe.jsonOf
 import org.http4s.dsl.Http4sDsl
 import org.http4s.{HttpRoutes, Request, Response, StaticFile}
 
@@ -29,7 +27,6 @@ import scala.concurrent.ExecutionContext
 case class StaticFileRoutes(htmlRootDirs: Seq[JPath],
                             landingPage: String,
                             jsRootDirs: Seq[JPath],
-                            imgRootDirs: Seq[JPath],
                             cssRootDirs: Seq[JPath],
                             resourceMap: Map[String, Option[String]])
   extends StrictLogging {
@@ -40,16 +37,15 @@ case class StaticFileRoutes(htmlRootDirs: Seq[JPath],
 
   jsRootDirs.foreach { jsRootDir =>
     def baseErr = s"jsRootDir '$jsRootDir' doesn't exist"
+
     def error = if (jsRootDir.toString.contains("js/target/scala-")) {
       s"$baseErr: You have to compile clientCrossJS first"
     } else baseErr
+
     require(jsRootDir.exists(), error)
   }
   cssRootDirs.foreach { cssRootDir =>
     require(cssRootDir.exists(), s"cssRootDir '$cssRootDir' doesn't exist")
-  }
-  imgRootDirs.foreach { rootDir =>
-    require(rootDir.exists(), s"imgRootDir '$rootDir' doesn't exist")
   }
 
   def routes[F[_] : Sync : ContextShift](blocker: Blocker = StaticFileRoutes.staticBlocker): HttpRoutes[F] = {
@@ -58,7 +54,6 @@ case class StaticFileRoutes(htmlRootDirs: Seq[JPath],
   }
 
   private class Builder[F[_] : Sync : ContextShift](blocker: Blocker) {
-    implicit val decoder = jsonOf[F, Login.Request]
     private val dsl = Http4sDsl[F]
 
     import dsl._
@@ -67,7 +62,10 @@ case class StaticFileRoutes(htmlRootDirs: Seq[JPath],
       HttpRoutes.of[F] {
         case request@GET -> Root / "js" / path => getJS(path, request)
         case request@GET -> Root / "css" / path => getCSS(path, request)
-        case request@GET -> Root / "img" / path => getImg(path, request)
+        case request@GET -> Root / "assets" / "packages" / "cupertino_icons" / "assets" / path => getHTML(s"assets/packages/cupertino_icons/assets/$path", request)
+        case request@GET -> Root / "assets" / "fonts" / path => getHTML(s"assets/fonts/$path", request)
+        case request@GET -> Root / "assets" / path => getHTML(s"assets/$path", request)
+        case request@GET -> Root / "icons" / path => getHTML(s"icons/$path", request)
         case request@GET -> Root => getHTML(landingPage, request)
         case request@GET -> Root / path => getHTML(path, request)
       }
@@ -76,11 +74,9 @@ case class StaticFileRoutes(htmlRootDirs: Seq[JPath],
     private def getCSS(unmatchedPath: String, request: Request[F]): F[Response[F]] = {
       resolvePaths(cssRootDirs, unmatchedPath, request).getOrElseF(NotFound())
     }
-    private def getImg(unmatchedPath: String, request: Request[F]): F[Response[F]] = {
-      resolvePaths(imgRootDirs, unmatchedPath, request).getOrElseF(NotFound())
-    }
 
     private def getHTML(unmatchedPath: String, request: Request[F]): F[Response[F]] = {
+      println(s"unmatchedPath is $unmatchedPath")
       resolvePaths(htmlRootDirs, unmatchedPath, request).getOrElseF(NotFound())
     }
 
@@ -152,7 +148,6 @@ object StaticFileRoutes {
       htmlRootDirs = dirs("htmlDir"),
       landingPage = wwwConfig.getString("landingPage"),
       jsRootDirs = dirs("jsDir"),
-      imgRootDirs = dirs("imgDir"),
       cssRootDirs = dirs("cssDir"),
       resourceMap = resourceMapping
     )
