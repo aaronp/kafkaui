@@ -1,0 +1,21 @@
+version: '3'
+services:
+  zookeeper:
+    image: wurstmeister/zookeeper
+    ports:
+      - "2181:2181"
+  kafka:
+    build: .
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_ADVERTISED_HOST_NAME: 192.168.1.14
+      ADVERTISED_HOST: localhost
+      ADVERTISED_PORT: 9092
+      KAFKA_ADVERTISED_LISTENERS: "LISTENER_BOB://kafka:29092,LISTENER_FRED://localhost:9092"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "LISTENER_BOB:PLAINTEXT,LISTENER_FRED:PLAINTEXT"
+      KAFKA_CREATE_TOPICS: "test:1:1"
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock

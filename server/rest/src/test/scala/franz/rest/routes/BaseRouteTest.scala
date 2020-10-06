@@ -1,18 +1,14 @@
 package franz.rest.routes
 
+import franz.rest.BaseTest
 import io.circe.Decoder
 import org.http4s._
-import org.scalatest.GivenWhenThen
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
 import zio.Task
 import zio.interop.catz._
 
 import scala.util.Try
 
-abstract class BaseRouteTest extends AnyWordSpec with Matchers with GivenWhenThen {
-
-  implicit val rt = zio.Runtime.default
+abstract class BaseRouteTest extends BaseTest {
 
   implicit class RichRoute(route: HttpRoutes[Task]) {
     def responseFor(request: Request[Task]): Response[Task] = responseForOpt(request).getOrElse(sys.error("no response"))

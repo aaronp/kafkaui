@@ -4,7 +4,7 @@ target
 .record
 .bsp
 savedSessions
-
+server/.kafka3.yml
 client/build
 client/.idea
 integration-test/src/test/resources/2020-05-10T16_50_40.025866-34

@@ -6,7 +6,7 @@
   </appender>
 
   <logger name="franz.ui.routes" level="trace"/>
-
+  <logger name="org.kafka" level="info" />
   <root level="debug">
     <appender-ref ref="STDOUT" />
   </root>

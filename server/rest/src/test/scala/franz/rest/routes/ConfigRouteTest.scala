@@ -1,6 +1,6 @@
 package franz.rest.routes
 
-import cats.syntax.option._
+import com.typesafe.config.ConfigFactory
 import franz.rest.ConfigService
 import org.http4s.{HttpRoutes, Status}
 import zio.{Task, UIO}
@@ -11,16 +11,16 @@ class ConfigRouteTest extends BaseRouteTest {
 
   "ConfigRoute.configForName" should {
     val routeUnderTest: HttpRoutes[Task] = ConfigRoute.configForName {
-      case None => Task.some("this is the default")
+      case None => Task.some(ConfigFactory.parseString("foo : true"))
       case Some("notfound") => Task.none
-      case Some(name) => Task.some(s"this is the config for $name")
+      case Some(name) => Task.some(ConfigFactory.parseString(s"this : 'is the config for $name'"))
     }
 
     val GetFoo = "/config?name=foo"
     s"return the configuration for GET $GetFoo" in {
       val response = routeUnderTest.responseFor(get(GetFoo))
       response.status shouldBe Status.Ok
-      response.bodyAsString shouldBe "this is the config for foo"
+      response.bodyAs[Map[String, String]] shouldBe Success(Map("this" -> "'is the config for foo'"))
     }
 
     s"return 404 for not-found configurations" in {
@@ -31,7 +31,7 @@ class ConfigRouteTest extends BaseRouteTest {
     s"return the default configuration for GET $GetDefault" in {
       val response = routeUnderTest.responseFor(get(GetDefault))
       response.status shouldBe Status.Ok
-      response.bodyAsString shouldBe "this is the default"
+      response.bodyAs[Map[String, Boolean]] shouldBe Success(Map("foo" -> true))
     }
   }
   "ConfigRoute.saveConfig" should {

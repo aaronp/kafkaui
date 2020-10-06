@@ -1,10 +1,14 @@
 package franz.rest.routes
 
+import com.typesafe.config.{Config, ConfigRenderOptions}
 import franz.rest.ConfigService
-import org.http4s.dsl.io.OptionalQueryParamDecoderMatcher
+import io.circe.Json
 import org.http4s._
+import org.http4s.dsl.io.OptionalQueryParamDecoderMatcher
 import zio.interop.catz._
 import zio.{Task, UIO, ZIO}
+
+import scala.util.Try
 
 
 /**
@@ -15,23 +19,27 @@ object ConfigRoute {
 
   object ConfigNameParam extends OptionalQueryParamDecoderMatcher[String]("name")
 
+  def configJson(config: Config): Try[Json] = {
+    val json = config.root().render(ConfigRenderOptions.concise().setJson(true))
+    io.circe.parser.decode[Json](json).toTry
+  }
+
   /**
    *
    * @param configLookup the lookup function
    */
-  def configForName(configLookup: Option[String] => Task[Option[String]])(implicit runtime: EnvRuntime): HttpRoutes[Task] = {
+  def configForName(configLookup: Option[String] => Task[Option[Config]])(implicit runtime: EnvRuntime): HttpRoutes[Task] = {
     import taskDsl._
     HttpRoutes.of[Task] {
       case _@GET -> Root / "config" :? ConfigNameParam(configName) =>
         val response: ZIO[Any, Throwable, Response[Task]] = configLookup(configName).flatMap {
           case Some(config) =>
-            implicit val ee = EntityEncoder.stringEncoder
-            println()
-            println(config)
-            println()
-            Task(Response(Status.Ok).withEntity(config))
+            import org.http4s.circe.CirceEntityCodec._
+            //            implicit val ee = EntityEncoder.stringEncoder
+            for {
+              c <- Task.fromTry(configJson(config))
+            } yield Response(Status.Ok).withEntity(c)
           case None =>
-            // import org.http4s.circe.CirceEntityCodec._
             NotFound()
         }
         response

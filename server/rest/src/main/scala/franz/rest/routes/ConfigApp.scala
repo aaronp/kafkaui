@@ -1,19 +1,23 @@
 package franz.rest.routes
 
-import cats.implicits._
-import com.typesafe.config.{Config, ConfigRenderOptions}
+import com.typesafe.config.{Config, ConfigFactory}
 import eie.io._
 import franz.rest.ConfigService
 import org.http4s.HttpRoutes
 import zio.Task
 import zio.interop.catz._
+import cats.implicits._
 
 /**
- * routes for serv
+ * Wires in the config services w/ the routes
  */
 case class ConfigApp(config: Config) {
   val dataDir = config.getString("franz.data.dir").asPath.mkDirs()
 
+  /**
+   * @param runtime
+   * @return the configuration routes
+   */
   def routes(implicit runtime: EnvRuntime): HttpRoutes[Task] = {
     val get: HttpRoutes[Task] = getConfigRoute(runtime)
     val post: HttpRoutes[Task] = saveConfigRoute(runtime)
@@ -24,7 +28,7 @@ case class ConfigApp(config: Config) {
   def getConfigRoute(implicit runtime: EnvRuntime): HttpRoutes[Task] = {
     ConfigRoute.configForName {
       case None | Some("default") => pathForName("default").flatMap {
-        case None => Task.some(config.root.render(ConfigRenderOptions.concise()))
+        case None => Task.some(config)
         case ok => Task.succeed(ok)
       }
       case Some(name) => pathForName(name)
@@ -35,10 +39,12 @@ case class ConfigApp(config: Config) {
     ConfigRoute.saveConfig(ConfigService.save(dataDir))
   }
 
-  private def pathForName(name: String): Task[Option[String]] = Task {
+  private def pathForName(name: String): Task[Option[Config]] = Task {
     val path = dataDir.resolve(name)
     if (path.exists()) {
-      path.text.some.filterNot(_.isEmpty)
+      path.text.some.filterNot(_.isEmpty).map { cfgText =>
+        ConfigFactory.parseString(cfgText)
+      }
     } else {
       None
     }

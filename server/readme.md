@@ -6,3 +6,14 @@ A CRUD application using IO/ZIO
 
 #Testing 
 Use AppClient against a route
+
+# Kafka
+
+see [kafka-docker](https://github.com/wurstmeister/kafka-docker)
+
+## Bring up Kafka
+
+```
+docker-compose up -d
+docker-compose scale kafka=3
+```
