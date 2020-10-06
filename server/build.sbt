@@ -9,11 +9,12 @@ scalatex.SbtPlugin.projectSettings
 
 val username = "aaronp"
 val repo = Build.ProjectName
-val defaultScalaVersion = "2.13.2"
-val scalaVersions = Seq("2.13.2")
+val defaultScalaVersion = "2.13.3"
+val scalaVersions = Seq(defaultScalaVersion)
 
 ThisBuild / scalaVersion := defaultScalaVersion
 ThisBuild / organization := "com.github.aaronp"
+
 ThisBuild / scalacOptions ++= Seq(
   "-deprecation",
   "-encoding", "UTF-8",
@@ -97,7 +98,6 @@ lazy val clientCross = crossProject(JSPlatform, JVMPlatform)
     name := "client",
     //https://dzone.com/articles/5-useful-circe-feature-you-may-have-overlooked
     libraryDependencies ++= List(
-      "com.github.aaronp" %%% "donovan" % "0.14.0",
       "io.circe" %%% "circe-generic" % Build.deps.circeVersion,
       "io.circe" %%% "circe-generic-extras" % Build.deps.circeGenExtrasVersion,
       "io.circe" %%% "circe-parser" % Build.deps.circeVersion,
@@ -118,8 +118,8 @@ lazy val clientCross = crossProject(JSPlatform, JVMPlatform)
   .jsSettings(test := {}) // ignore JS tests - they're all done on the JVM
   .jsSettings(libraryDependencies ++= List(
     "org.scala-js" %%% "scalajs-java-time" % "1.0.0",
-    "com.lihaoyi" %%% "scalatags" % "0.9.1",
-    "org.scala-js" %%% "scalajs-dom" % "1.0.0",
+    "com.lihaoyi" %%% "scalatags" % "0.9.2",
+    "org.scala-js" %%% "scalajs-dom" % "1.1.0",
     "org.scalatest" %%% "scalatest" % "3.1.2" % "test"
   ))
 

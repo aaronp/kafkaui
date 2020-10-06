@@ -3,8 +3,6 @@ import java.nio.file.Path
 import eie.io._
 import sbt._
 
-import scala.collection.immutable
-
 object Build {
 
   val ProjectName = "franz"
@@ -21,7 +19,7 @@ object Build {
 
     val zioVersion = "1.0.1"
     val zio = List(
-      "dev.zio" %% "zio-interop-cats" % "2.1.4.0",
+      "dev.zio" %% "zio-interop-cats" % "2.2.0.0",
       "dev.zio" %% "zio" % zioVersion,
       "dev.zio" %% "zio-streams" % zioVersion,
       "dev.zio" %% "zio-test" % zioVersion % "test",
@@ -38,12 +36,13 @@ object Build {
       )
     }
 
-    val scalaTest = "org.scalatest" %% "scalatest" % "3.1.2" % "test"
+    val scalaTest = "org.scalatest" %% "scalatest" % "3.2.2" % "test"
 
     def clientJVM = {
       List(
         typesafeConfig,
         scalaTest,
+        "com.github.aaronp" %% "kafka4m" % "0.7.4-SNAPSHOT",
         "com.github.aaronp" %% "args4c" % "0.7.0",
         "com.github.aaronp" %% "eie" % "1.0.0",
         "org.http4s" %% "http4s-circe" % Http4sVersion,
@@ -74,15 +73,12 @@ object Build {
     }
 
     def cucumber = {
-      val cs = "io.cucumber" %% "cucumber-scala" % "5.7.0" % "test"
+      val cs = "io.cucumber" %% "cucumber-scala" % "6.8.0" % "test"
 
       cs +: Seq("cucumber-core", "cucumber-jvm", "cucumber-junit").map { art =>
-        "io.cucumber" % art % "5.7.0" % "test"
+        "io.cucumber" % art % "6.8.0" % "test"
       }
     }
-
-    def requestsScala = "com.lihaoyi" %% "requests" % "0.5.1"
-
   }
 
   def scalacSettings = {

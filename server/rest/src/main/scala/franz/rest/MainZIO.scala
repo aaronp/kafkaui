@@ -1,46 +1,21 @@
 package franz.rest
 
 import args4c.implicits._
+import cats.effect.ExitCode
 import com.typesafe.scalalogging.StrictLogging
+import franz.rest.routes.RestRoutes
 import franz.ui.routes.StaticFileRoutes
-import org.http4s.HttpRoutes
-import org.http4s.dsl.Http4sDsl
 import org.http4s.implicits.http4sKleisliResponseSyntaxOptionT
 import org.http4s.server.Router
 import org.http4s.server.blaze.BlazeServerBuilder
-import zio.{Task, URIO, ZEnv}
 import zio.interop.catz._
 import zio.interop.catz.implicits._
-import cats.effect.ExitCode
+import zio.{Task, URIO, ZEnv}
 
 import scala.concurrent.ExecutionContext
 
 
 object MainZIO extends CatsApp with StrictLogging {
-
-  object example {
-
-    import org.http4s.circe.CirceEntityCodec._
-    import zio.Task
-    import zio.interop.catz._
-
-    val dsl: Http4sDsl[Task] = Http4sDsl[Task]
-
-    import dsl._
-
-    def getBooks(): Task[List[String]] = {
-      Task(List("a", "b"))
-    }
-
-    val routes = HttpRoutes.of[Task] {
-      case _@GET -> Root / "books" =>
-        println("getting books...")
-        getBooks().flatMap { books: List[String] =>
-          println(s"got ${books.size} books...")
-          Ok(books)
-        }
-    }
-  }
 
   override def run(args: List[String]): URIO[ZEnv, zio.ExitCode] = {
     runForArgs(args).map {
@@ -57,7 +32,7 @@ object MainZIO extends CatsApp with StrictLogging {
 
     val staticRoutes: StaticFileRoutes = StaticFileRoutes(config)
     val httpRoutes = Router[Task](
-      "/rest" -> example.routes,
+      "/rest" -> RestRoutes(config),
       "/" -> staticRoutes.routes[Task]()
     ).orNotFound
 

@@ -2,6 +2,7 @@ target
 .idea
 .DS_Store
 .record
+.bsp
 savedSessions
 
 client/build
