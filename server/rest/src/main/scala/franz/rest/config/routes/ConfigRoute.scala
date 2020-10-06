@@ -1,15 +1,15 @@
-package franz.rest.routes
+package franz.rest.config.routes
 
 import com.typesafe.config.{Config, ConfigRenderOptions}
-import franz.rest.ConfigService
+import franz.rest.{EnvRuntime, taskDsl}
 import io.circe.Json
-import org.http4s._
 import org.http4s.dsl.io.OptionalQueryParamDecoderMatcher
-import zio.interop.catz._
+import org.http4s.circe.CirceEntityCodec._
+import org.http4s.{EntityDecoder, HttpRoutes, Response, Status}
 import zio.{Task, UIO, ZIO}
-
+import cats.implicits._
+import zio.interop.catz._
 import scala.util.Try
-
 
 /**
  * We save kafka configs against a name on the server-size

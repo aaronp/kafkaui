@@ -6,14 +6,16 @@ import sbtcrossproject.CrossPlugin.autoImport.{CrossType, crossProject}
 import scala.collection.immutable
 
 scalatex.SbtPlugin.projectSettings
-
+val dottyVersion = "0.27.0-RC1"
 val username = "aaronp"
 val repo = Build.ProjectName
 val defaultScalaVersion = "2.13.3"
-val scalaVersions = Seq(defaultScalaVersion)
+val scalaVersions = Seq(dottyVersion, defaultScalaVersion)
 
 ThisBuild / scalaVersion := defaultScalaVersion
 ThisBuild / organization := "com.github.aaronp"
+
+//ThisBuild / scalacOptions ++= { if (isDotty.value) Seq("-source:3.0-migration") else Nil }
 
 ThisBuild / scalacOptions ++= Seq(
   "-deprecation",

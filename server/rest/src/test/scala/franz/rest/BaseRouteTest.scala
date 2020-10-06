@@ -1,6 +1,5 @@
-package franz.rest.routes
+package franz.rest
 
-import franz.rest.BaseTest
 import io.circe.Decoder
 import org.http4s._
 import zio.Task
@@ -14,13 +13,13 @@ abstract class BaseRouteTest extends BaseTest {
     def responseFor(request: Request[Task]): Response[Task] = responseForOpt(request).getOrElse(sys.error("no response"))
 
     def responseForOpt(request: Request[Task]): Option[Response[Task]] = {
-      rt.unsafeRun(route(request).value)
+      route(request).value.value()
     }
   }
 
   implicit class RichResponse(response: Response[Task]) {
 
-    def bodyAsString: String = rt.unsafeRun(bodyTask)
+    def bodyAsString: String = bodyTask.value()
 
     def bodyAs[A: Decoder]: Try[A] = io.circe.parser.decode[A](bodyAsString).toTry
 

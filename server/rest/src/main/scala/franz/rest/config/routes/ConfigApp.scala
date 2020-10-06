@@ -1,12 +1,13 @@
-package franz.rest.routes
+package franz.rest.config.routes
 
 import com.typesafe.config.{Config, ConfigFactory}
-import eie.io._
-import franz.rest.ConfigService
+import franz.rest.EnvRuntime
 import org.http4s.HttpRoutes
 import zio.Task
+import eie.io._
 import zio.interop.catz._
 import cats.implicits._
+
 
 /**
  * Wires in the config services w/ the routes

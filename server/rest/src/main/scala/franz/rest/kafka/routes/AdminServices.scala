@@ -1,24 +1,23 @@
-package franz.rest
+package franz.rest.kafka.routes
 
 import java.util.Properties
 import java.util.concurrent.TimeUnit
 
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
-import franz.rest.KafkaService.CreateTopic
-import franz.rest.routes.{ConsumerGroupEntry, OffsetMetadata}
+import franz.rest.kafka.routes.AdminServices.CreateTopic
 import io.circe.Json
 import io.circe.syntax._
 import kafka4m.admin.{ConsumerGroupStats, RichKafkaAdmin}
 import kafka4m.util.Props
-import org.apache.kafka.clients.admin.{AdminClient, ConsumerGroupListing, ListTopicsOptions}
+import org.apache.kafka.clients.admin.{AdminClient, ListTopicsOptions}
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.TopicPartition
 import zio.{Task, ZIO}
 
 import scala.concurrent.duration.FiniteDuration
 
-case class KafkaService(admin: RichKafkaAdmin, requestTimeout: FiniteDuration) extends StrictLogging {
+case class AdminServices(admin: RichKafkaAdmin, requestTimeout: FiniteDuration) extends StrictLogging {
 
 
   def topics(listInternal: Boolean): Task[Map[String, Boolean]] = {
@@ -82,7 +81,7 @@ case class KafkaService(admin: RichKafkaAdmin, requestTimeout: FiniteDuration) e
 
 }
 
-object KafkaService {
+object AdminServices {
 
   case class CreateTopic(name: String, numPartitions: Int = 1, replicationFactor: Short = 1)
 
@@ -90,7 +89,7 @@ object KafkaService {
     implicit val codec = io.circe.generic.semiauto.deriveCodec[CreateTopic]
   }
 
-  def apply(rootConfig: Config): KafkaService = {
+  def apply(rootConfig: Config): AdminServices = {
 
     import args4c.implicits._
     val kafkaCfg = rootConfig.getConfig("franz.kafka.admin")
@@ -98,6 +97,6 @@ object KafkaService {
 
     val props: Properties = Props.propertiesForConfig(kafkaCfg)
     val admin: AdminClient = AdminClient.create(props)
-    KafkaService(new RichKafkaAdmin(admin), requestTimeout)
+    AdminServices(new RichKafkaAdmin(admin), requestTimeout)
   }
 }

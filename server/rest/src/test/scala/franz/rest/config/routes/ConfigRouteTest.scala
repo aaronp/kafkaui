@@ -1,7 +1,7 @@
-package franz.rest.routes
+package franz.rest.config.routes
 
 import com.typesafe.config.ConfigFactory
-import franz.rest.ConfigService
+import franz.rest.BaseRouteTest
 import org.http4s.{HttpRoutes, Status}
 import zio.{Task, UIO}
 
@@ -45,7 +45,7 @@ class ConfigRouteTest extends BaseRouteTest {
     s"return a failure for POST $BadName" in {
       val response = routeUnderTest.responseFor(post(BadName, "foo : true"))
       response.status shouldBe Status.BadRequest
-      response.bodyAsString shouldBe "Invalid config name 'bad..name'"
+      response.bodyAs[String] shouldBe Success("Invalid config name 'bad..name'")
     }
     s"return success for valid config names" in {
       val response = routeUnderTest.responseFor(post("/config/valid", "foo : true"))
@@ -56,12 +56,12 @@ class ConfigRouteTest extends BaseRouteTest {
     s"return a failure when the save handler throws an exception" in {
       val response = routeUnderTest.responseFor(post("/config/throw", "doesn't matter"))
       response.status shouldBe Status.InternalServerError
-      response.bodyAsString shouldBe "Encountered a bug saving: 'throw': doesn't matter"
+      response.bodyAs[String] shouldBe Success("Encountered a bug saving: 'throw': doesn't matter")
     }
     "return a failure when the save handler returns a left message" in {
       val response = routeUnderTest.responseFor(post("/config/fail", "this is the content of the failed handler"))
       response.status shouldBe Status.InternalServerError
-      response.bodyAsString shouldBe "Error saving 'fail': BANG! --> this is the content of the failed handler"
+      response.bodyAs[String] shouldBe Success("Error saving 'fail': BANG! --> this is the content of the failed handler")
     }
   }
 }

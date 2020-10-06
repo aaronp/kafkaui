@@ -1,4 +1,4 @@
-package franz.rest
+package franz.rest.config.routes
 
 import java.nio.file.Path
 
