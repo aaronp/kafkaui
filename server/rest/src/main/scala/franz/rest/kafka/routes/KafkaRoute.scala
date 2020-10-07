@@ -5,6 +5,7 @@ import java.util.Base64
 import franz.rest.kafka.routes.AdminServices.CreateTopic
 import franz.rest.{EnvRuntime, taskDsl}
 import io.circe.Json
+import io.circe.syntax._
 import org.http4s.{DecodeResult, EntityDecoder, HttpRoutes}
 import org.http4s.circe.CirceEntityCodec._
 import zio.Task
@@ -76,10 +77,20 @@ object KafkaRoute {
    */
   def describeCluster(describe: Task[DescribeCluster])(implicit runtime: EnvRuntime): HttpRoutes[Task] = {
     HttpRoutes.of[Task] {
-      case GET -> Root / "kafka" / "cluster" =>
-        describe.flatMap { result =>
-          Ok(result)
-        }
+      case GET -> Root / "kafka" / "cluster" => describe.flatMap { result =>
+        Ok(result)
+      }
+    }
+  }
+
+  /**
+   * GET /kafka/metrics
+   */
+  def metrics(getMetrics: Task[List[(MetricKey, String)]])(implicit runtime: EnvRuntime): HttpRoutes[Task] = {
+    HttpRoutes.of[Task] {
+      case GET -> Root / "kafka" / "metrics" => getMetrics.flatMap { result =>
+        Ok(result)
+      }
     }
   }
 

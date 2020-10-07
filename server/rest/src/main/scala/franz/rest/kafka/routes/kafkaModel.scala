@@ -1,9 +1,10 @@
 package franz.rest.kafka.routes
 
-import org.apache.kafka.clients.admin.{ConsumerGroupListing, DescribeClusterResult, TopicDescription}
+import org.apache.kafka.clients.admin.{ConsumerGroupListing, TopicDescription}
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.clients.producer.RecordMetadata
-import org.apache.kafka.common.{Node, TopicPartition, TopicPartitionInfo}
+import org.apache.kafka.common.metrics.KafkaMetric
+import org.apache.kafka.common.{MetricName, Node, TopicPartition, TopicPartitionInfo}
 
 import scala.jdk.CollectionConverters._
 import scala.util.Try
@@ -116,5 +117,28 @@ final case class DescribeCluster(nodes: Seq[NodeDesc],
 
 object DescribeCluster {
   implicit val codec = io.circe.generic.semiauto.deriveCodec[DescribeCluster]
+}
 
+final case class MetricKey(name: String,
+                           group: String,
+                           description: String,
+                           tags: Map[String, String])
+
+object MetricKey {
+  implicit val codec = io.circe.generic.semiauto.deriveCodec[MetricKey]
+
+  def apply(value: MetricName): MetricKey = {
+    new MetricKey(
+      value.name(),
+      value.group(),
+      value.description(),
+      value.tags().asScala.toMap
+    )
+  }
+}
+
+object Metric {
+  def apply(value: KafkaMetric): String = {
+    Try(value.metricValue()).getOrElse("").toString
+  }
 }

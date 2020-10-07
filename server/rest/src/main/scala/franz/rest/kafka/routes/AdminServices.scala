@@ -14,7 +14,8 @@ import kafka4m.util.Props
 import org.apache.kafka.clients.admin.{AdminClient, ListTopicsOptions, TopicDescription}
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.acl.AclOperation
-import org.apache.kafka.common.{KafkaFuture, Node, TopicPartition}
+import org.apache.kafka.common.metrics.KafkaMetric
+import org.apache.kafka.common.{KafkaFuture, MetricName, Node, TopicPartition}
 import zio.{Task, ZIO}
 
 import scala.collection.mutable
@@ -45,6 +46,16 @@ case class AdminServices(admin: RichKafkaAdmin, requestTimeout: FiniteDuration) 
     def asTask = {
       Task[A](future.get(requestTimeout.toMillis, TimeUnit.MILLISECONDS))
     }
+  }
+
+  def metrics(): Task[List[(MetricKey, String)]] = {
+    for {
+      metrics <- Task(admin.admin.metrics())
+      all = metrics.asScala.collect {
+        case (name: MetricName, value: KafkaMetric) =>
+          MetricKey(name) -> Metric(value)
+      }
+    } yield all.toList
   }
 
   def describeCluster(): Task[DescribeCluster] = {
