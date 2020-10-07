@@ -1,10 +1,10 @@
 package franz.rest.kafka.routes
 
-import org.apache.kafka.clients.admin.{ConsumerGroupListing, NewPartitions, TopicDescription}
+import org.apache.kafka.clients.admin.{ConsumerGroupDescription, ConsumerGroupListing, MemberDescription, NewPartitions, TopicDescription}
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.clients.producer.RecordMetadata
 import org.apache.kafka.common.metrics.KafkaMetric
-import org.apache.kafka.common.{MetricName, Node, TopicPartition, TopicPartitionInfo}
+import org.apache.kafka.common.{ConsumerGroupState, MetricName, Node, TopicPartition, TopicPartitionInfo}
 
 import scala.jdk.CollectionConverters._
 import scala.util.Try
@@ -144,6 +144,7 @@ object Metric {
 }
 
 final case class CreatePartitionRequest(newPartitions: Map[String, UpdatedPartition], validateOnly: Boolean)
+
 object CreatePartitionRequest {
   implicit val codec = io.circe.generic.semiauto.deriveCodec[CreatePartitionRequest]
 }
@@ -161,4 +162,49 @@ final case class UpdatedPartition(totalCount: Int, newAssignments: List[List[Int
 
 object UpdatedPartition {
   implicit val codec = io.circe.generic.semiauto.deriveCodec[UpdatedPartition]
+}
+
+
+case class ConsumerGroupMember(consumerId: String,
+                               groupInstanceId: Option[String],
+                               clientId: String,
+                               host: String,
+                               assignment: Set[TopicKey])
+
+object ConsumerGroupMember {
+  def apply(value: MemberDescription): ConsumerGroupMember = {
+    ConsumerGroupMember(
+      value.consumerId,
+      Try(value.groupInstanceId.get()).toOption,
+      value.clientId(),
+      value.host(),
+      value.assignment().topicPartitions().asScala.map(TopicKey.apply).toSet
+    )
+  }
+}
+
+
+case class ConsumerGroupDesc(groupId: String,
+                             isSimpleConsumerGroup: Boolean,
+                             members: List[ConsumerGroupMember],
+                             partitionAssignor: String,
+                             state: String,
+                             coordinator: NodeDesc,
+                             authorizedOperations: Set[String]
+                            )
+
+object ConsumerGroupDesc {
+  implicit val codec = io.circe.generic.semiauto.deriveCodec[ConsumerGroupDesc]
+
+  def apply(value: ConsumerGroupDescription): ConsumerGroupDesc = {
+    ConsumerGroupDesc(
+      value.groupId,
+      value.isSimpleConsumerGroup,
+      value.members().asScala.map(ConsumerGroupMember.apply).toList,
+      value.partitionAssignor(),
+      value.state().name(),
+      NodeDesc(value.coordinator()),
+      value.authorizedOperations().asScala.map(_.name()).toSet
+    )
+  }
 }

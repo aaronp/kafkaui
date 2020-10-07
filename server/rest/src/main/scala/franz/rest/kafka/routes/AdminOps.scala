@@ -24,9 +24,6 @@ import scala.jdk.CollectionConverters._
 
 case class AdminOps(admin: RichKafkaAdmin, requestTimeout: FiniteDuration) extends StrictLogging {
 
-  type ConsumerGroupId = String
-  type Topic = String
-  type Partition = Int
 
   def rebalance() = {
     admin.admin.createPartitions(???, ???)
@@ -83,7 +80,16 @@ case class AdminOps(admin: RichKafkaAdmin, requestTimeout: FiniteDuration) exten
     }
   }
 
-  def topics(listInternal: Boolean): Task[Map[String, Boolean]] = {
+  def describeConsumerGroups(groupIds: Set[Topic], includeAuthorizedOperations: Boolean): Task[Map[ConsumerGroupId, ConsumerGroupDesc]] = {
+    for {
+      result <- Task(admin.admin.describeConsumerGroups(groupIds.asJava, (new DescribeConsumerGroupsOptions).includeAuthorizedOperations(includeAuthorizedOperations)))
+      byTopic <- result.all().asTask
+    } yield {
+      byTopic.asScala.view.mapValues(ConsumerGroupDesc.apply).toMap
+    }
+  }
+
+  def topics(listInternal: Boolean): Task[Map[Topic, Boolean]] = {
     Task.fromFuture { implicit ec =>
       admin.topics(new ListTopicsOptions().listInternal(listInternal))
     }.map { byName =>
@@ -94,7 +100,7 @@ case class AdminOps(admin: RichKafkaAdmin, requestTimeout: FiniteDuration) exten
     }
   }
 
-  def partitionsForTopic(topics: Set[String]): Task[Map[Topic, TopicDesc]] = {
+  def partitionsForTopic(topics: Set[Topic]): Task[Map[Topic, TopicDesc]] = {
     Task {
       val result = admin.admin.describeTopics(topics.asJava)
       val resultsByTopic: mutable.Map[Topic, TopicDescription] = result.all().get(requestTimeout.toMillis, TimeUnit.MILLISECONDS).asScala
@@ -120,7 +126,7 @@ case class AdminOps(admin: RichKafkaAdmin, requestTimeout: FiniteDuration) exten
     }
   }
 
-  def consumerGroupStats(forGroup: String): Task[Json] = {
+  def consumerGroupStats(forGroup: ConsumerGroupId): Task[Json] = {
     Task.fromFuture(implicit ec => admin.consumerGroupsPositions(forGroup)).map { stats =>
       asTopicMap(stats).asJson
     }
@@ -150,7 +156,7 @@ case class AdminOps(admin: RichKafkaAdmin, requestTimeout: FiniteDuration) exten
 
 object AdminOps {
 
-  case class CreateTopic(name: String, numPartitions: Int = 1, replicationFactor: Short = 1)
+  case class CreateTopic(name: Topic, numPartitions: Int = 1, replicationFactor: Short = 1)
 
   object CreateTopic {
     implicit val codec = io.circe.generic.semiauto.deriveCodec[CreateTopic]

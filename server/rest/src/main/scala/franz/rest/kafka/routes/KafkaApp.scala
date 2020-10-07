@@ -14,14 +14,16 @@ case class KafkaApp(config: Config) {
     val admin = AdminOps(config)
     val adminRoutes: HttpRoutes[Task] = KafkaRoute.listTopics(internal => admin.topics(internal)) <+>
       KafkaRoute.createTopic(admin.createTopic) <+>
-      KafkaRoute.allConsumerGroupStats(admin.consumerGroupStats) <+>
-      KafkaRoute.consumerGroupStats(admin.consumerGroupStats) <+>
-      KafkaRoute.listConsumerGroups(admin.listConsumerGroups) <+>
       KafkaRoute.partitionsForTopicsGet(admin.partitionsForTopic) <+>
       KafkaRoute.partitionsForTopicsPost(admin.partitionsForTopic) <+>
       KafkaRoute.describeCluster(admin.describeCluster) <+>
       KafkaRoute.metrics(admin.metrics) <+>
-      KafkaRoute.repartition(admin.createPartitions)
+      KafkaRoute.repartition(admin.createPartitions) <+>
+      ConsumerGroupRoutes.consumerGroupStats(admin.consumerGroupStats) <+>
+      ConsumerGroupRoutes.allConsumerGroupStats(admin.consumerGroupStats) <+>
+      ConsumerGroupRoutes.listConsumerGroups(admin.listConsumerGroups) <+>
+      ConsumerGroupRoutes.describeConsumerGroupsPost(admin.describeConsumerGroups) <+>
+      ConsumerGroupRoutes.describeConsumerGroupsGet(admin.describeConsumerGroups)
 
     val publishRoutes = ZIO.environment[ProducerOps].map { publish =>
       KafkaRoute.publish(publish.push) <+>

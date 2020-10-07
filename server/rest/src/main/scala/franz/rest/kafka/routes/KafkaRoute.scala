@@ -5,12 +5,10 @@ import java.util.Base64
 import franz.rest.kafka.routes.AdminOps.CreateTopic
 import franz.rest.{EnvRuntime, taskDsl}
 import io.circe.Json
-import io.circe.syntax._
-import org.http4s.{DecodeResult, EntityDecoder, HttpRoutes}
 import org.http4s.circe.CirceEntityCodec._
+import org.http4s.{DecodeResult, EntityDecoder, HttpRoutes}
 import zio.Task
 import zio.interop.catz._
-import cats.implicits._
 
 object KafkaRoute {
 
@@ -60,19 +58,6 @@ object KafkaRoute {
   }
 
   /**
-   * GET /kafka/partitions/<topic-list>
-   */
-  def partitionsForTopicsGet(partitionsForTopic: Set[String] => Task[Map[String, TopicDesc]])(implicit runtime: EnvRuntime): HttpRoutes[Task] = {
-    HttpRoutes.of[Task] {
-      case GET -> Root / "kafka" / "partitions" / topics =>
-        val topicSet = topics.split(",", -1).toSet.map(_.trim)
-        partitionsForTopic(topicSet).flatMap { topics =>
-          Ok(topics)
-        }
-    }
-  }
-
-  /**
    * GET /kafka/cluster
    */
   def describeCluster(describe: Task[DescribeCluster])(implicit runtime: EnvRuntime): HttpRoutes[Task] = {
@@ -82,6 +67,7 @@ object KafkaRoute {
       }
     }
   }
+
 
   /**
    * GET /kafka/metrics
@@ -109,6 +95,19 @@ object KafkaRoute {
     }
   }
 
+  /**
+   * GET /kafka/partitions/<topic-list>
+   */
+  def partitionsForTopicsGet(partitionsForTopic: Set[String] => Task[Map[String, TopicDesc]])(implicit runtime: EnvRuntime): HttpRoutes[Task] = {
+    HttpRoutes.of[Task] {
+      case GET -> Root / "kafka" / "partitions" / topics =>
+        val topicSet = topics.split(",", -1).toSet.map(_.trim)
+        partitionsForTopic(topicSet).flatMap { topics =>
+          Ok(topics)
+        }
+    }
+  }
+
 
   /**
    * POST /kafka/repartition
@@ -123,43 +122,6 @@ object KafkaRoute {
         } yield resp
     }
   }
-
-  /**
-   * GET /kafka/groups - returns a map of all consumer groups->topic->partition->offset/metadata
-   */
-  def listConsumerGroups(listGroups: Task[Json])(implicit runtime: EnvRuntime): HttpRoutes[Task] = {
-    HttpRoutes.of[Task] {
-      case GET -> Root / "kafka" / "groups" =>
-        listGroups.flatMap { stats =>
-          Ok(stats)
-        }
-    }
-  }
-
-  /**
-   * GET /kafka/groups/stats - returns a map of all consumer groups->topic->partition->offset/metadata
-   */
-  def allConsumerGroupStats(listStats: Task[Json])(implicit runtime: EnvRuntime): HttpRoutes[Task] = {
-    HttpRoutes.of[Task] {
-      case GET -> Root / "kafka" / "groups" / "stats" =>
-        listStats.flatMap { stats =>
-          Ok(stats)
-        }
-    }
-  }
-
-  /**
-   * GET /kafka/groups - returns a map of all consumer groups->topic->partition->offset/metadata
-   */
-  def consumerGroupStats(listStats: String => Task[Json])(implicit runtime: EnvRuntime): HttpRoutes[Task] = {
-    HttpRoutes.of[Task] {
-      case GET -> Root / "kafka" / "group" / consumerGroup =>
-        listStats(consumerGroup).flatMap { stats =>
-          Ok(stats)
-        }
-    }
-  }
-
   /**
    * POST /kafka/topic
    */
