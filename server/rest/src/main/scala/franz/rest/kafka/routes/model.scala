@@ -1,10 +1,11 @@
 package franz.rest.kafka.routes
 
-import org.apache.kafka.clients.admin.{ConsumerGroupDescription, ConsumerGroupListing, MemberDescription, NewPartitions, TopicDescription}
+import org.apache.kafka.clients.admin.ListOffsetsResult.ListOffsetsResultInfo
+import org.apache.kafka.clients.admin._
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.clients.producer.RecordMetadata
 import org.apache.kafka.common.metrics.KafkaMetric
-import org.apache.kafka.common.{ConsumerGroupState, MetricName, Node, TopicPartition, TopicPartitionInfo}
+import org.apache.kafka.common._
 
 import scala.jdk.CollectionConverters._
 import scala.util.Try
@@ -29,7 +30,9 @@ object OffsetMetadata {
   }
 }
 
-case class TopicKey(topic: String, partition: Int)
+case class TopicKey(topic: String, partition: Int) {
+  def asJava: TopicPartition = new TopicPartition(topic, partition)
+}
 
 object TopicKey {
   implicit val codec = io.circe.generic.semiauto.deriveCodec[TopicKey]
@@ -183,7 +186,6 @@ object ConsumerGroupMember {
   }
 }
 
-
 case class ConsumerGroupDesc(groupId: String,
                              isSimpleConsumerGroup: Boolean,
                              members: List[ConsumerGroupMember],
@@ -207,4 +209,113 @@ object ConsumerGroupDesc {
       value.authorizedOperations().asScala.map(_.name()).toSet
     )
   }
+}
+
+sealed trait Offset {
+  def asJava: OffsetSpec = {
+    this match {
+      case Latest => OffsetSpec.LatestSpec
+      case Earliest => OffsetSpec.EarliestSpec
+      case Timestamp(at) => new OffsetSpec.TimestampSpec(at)
+    }
+  }
+}
+
+case object Latest extends Offset
+
+case object Earliest extends Offset
+
+case class Timestamp(timestamp: Long) extends Offset
+
+object Timestamp {
+  implicit val codec = io.circe.generic.semiauto.deriveCodec[Timestamp]
+}
+
+object Offset {
+  def latest = Latest
+
+  def earliest = Earliest
+
+  import io.circe.generic.extras.semiauto._
+
+  implicit val codec = deriveEnumerationCodec[Offset]
+}
+
+final case class ReadPositionAt(topicPartition: TopicKey, at: Offset)
+
+object ReadPositionAt {
+  implicit val codec = io.circe.generic.semiauto.deriveCodec[ReadPositionAt]
+}
+
+final case class ListOffsetsRequest(topics: List[ReadPositionAt], readUncommitted: Boolean) {
+  def asJavaMap = {
+    val map = topics.foldLeft(Map[TopicPartition, OffsetSpec]()) {
+      case (map, next) => map.updated(next.topicPartition.asJava, next.at.asJava)
+    }
+    map.asJava
+  }
+
+  def options: ListOffsetsOptions = {
+    readUncommitted match {
+      case true =>
+        new ListOffsetsOptions(IsolationLevel.READ_UNCOMMITTED)
+      case false =>
+        new ListOffsetsOptions(IsolationLevel.READ_COMMITTED)
+    }
+  }
+}
+
+object ListOffsetsRequest {
+  implicit val codec = io.circe.generic.semiauto.deriveCodec[ListOffsetsRequest]
+}
+
+final case class OffsetRange(topic: TopicKey, earliest: OffsetInfo, latest: OffsetInfo)
+
+object OffsetRange {
+  implicit val codec = io.circe.generic.semiauto.deriveCodec[OffsetRange]
+}
+
+
+object TopicOffsetsResponse {
+  def apply(
+             earliestResponse: Seq[ListOffsetsEntry],
+             latestResponse: Seq[ListOffsetsEntry]
+           ): Seq[OffsetRange] = {
+    val latestByKey = latestResponse.map { e =>
+      e.topic -> e.offset
+    }.toMap.ensuring(_.size == latestResponse.size)
+
+    earliestResponse.map { e =>
+      latestByKey.get(e.topic) match {
+        case Some(latest) => OffsetRange(e.topic, e.offset, latest)
+        case None => OffsetRange(e.topic, e.offset, OffsetInfo(-1, -1, None))
+      }
+    }
+  }
+}
+
+final case class ListOffsetsEntry(topic: TopicKey, offset: OffsetInfo)
+
+object ListOffsetsEntry {
+  implicit val codec = io.circe.generic.semiauto.deriveCodec[ListOffsetsEntry]
+
+  def apply(value: Iterable[(TopicKey, OffsetInfo)]): Seq[ListOffsetsEntry] = {
+    value.map {
+      case (k, o) => ListOffsetsEntry(k, o)
+    }.toSeq
+  }
+}
+
+final case class OffsetInfo(offset: Long, timestamp: Long, leaderEpoch: Option[Long])
+
+object OffsetInfo {
+  def apply(value: ListOffsetsResultInfo): OffsetInfo = {
+    OffsetInfo(
+      value.offset(),
+      value.timestamp(),
+      Try(value.leaderEpoch().get.toLong).toOption
+    )
+  }
+
+  implicit val codec = io.circe.generic.semiauto.deriveCodec[OffsetInfo]
 }

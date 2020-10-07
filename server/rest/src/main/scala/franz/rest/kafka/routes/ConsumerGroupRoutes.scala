@@ -24,7 +24,6 @@ object ConsumerGroupRoutes {
     }
   }
 
-
   def describeConsumerGroupsPost(onDescribe: (Set[Topic], Boolean) => Task[Map[ConsumerGroupId, ConsumerGroupDesc]])(implicit runtime: EnvRuntime): HttpRoutes[Task] = {
     HttpRoutes.of[Task] {
       case req@POST -> Root / "kafka" / "group" / "describe" :? IncludeAuthorizedOperationsOpt(includeAuth) =>

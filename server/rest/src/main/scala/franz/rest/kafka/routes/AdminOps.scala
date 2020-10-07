@@ -24,21 +24,6 @@ import scala.jdk.CollectionConverters._
 
 case class AdminOps(admin: RichKafkaAdmin, requestTimeout: FiniteDuration) extends StrictLogging {
 
-
-  def rebalance() = {
-    admin.admin.createPartitions(???, ???)
-    admin.admin.deleteConsumerGroupOffsets(???, ???)
-    admin.admin.deleteConsumerGroups(???)
-    admin.admin.deleteTopics(???)
-    admin.admin.deleteRecords(???, ???)
-    admin.admin.describeCluster()
-    admin.admin.describeLogDirs(???)
-    admin.admin.electLeaders(???, ???)
-    admin.admin.metrics()
-
-    //admin.admin.alterPartitionReassignments()
-  }
-
   private implicit def richFuture[A](future: KafkaFuture[A]) = new {
     def asTask = {
       Task[A](future.get(requestTimeout.toMillis, TimeUnit.MILLISECONDS))
@@ -61,6 +46,37 @@ case class AdminOps(admin: RichKafkaAdmin, requestTimeout: FiniteDuration) exten
           MetricKey(name) -> Metric(value)
       }
     } yield all.toList
+  }
+
+  def listOffsetsForTopics(topics: Set[Topic]): Task[Seq[OffsetRange]] = {
+    def asRequest(topicDesc: Map[Topic, TopicDesc], offset: Offset): ListOffsetsRequest = {
+      val positions = for {
+        (topic, desc) <- topicDesc
+        partition <- desc.partitions
+      } yield ReadPositionAt(TopicKey(topic, partition.partition), offset)
+      ListOffsetsRequest(positions.toList, false)
+    }
+
+    for {
+      topicDesc <- partitionsForTopic(topics)
+      earliestResponse: Seq[ListOffsetsEntry] <- listOffsets(asRequest(topicDesc, Offset.earliest))
+      latestResponse: Seq[ListOffsetsEntry] <- listOffsets(asRequest(topicDesc, Offset.latest))
+    } yield {
+      TopicOffsetsResponse(earliestResponse, latestResponse)
+    }
+  }
+
+  def listOffsets(request: ListOffsetsRequest): Task[Seq[ListOffsetsEntry]] = {
+    for {
+      result <- Task(admin.admin.listOffsets(request.asJavaMap, request.options))
+      responseMap <- result.all().asTask
+    } yield {
+      ListOffsetsEntry {
+        responseMap.asScala.map {
+          case (key, value) => TopicKey(key) -> OffsetInfo(value)
+        }
+      }
+    }
   }
 
   def describeCluster(): Task[DescribeCluster] = {

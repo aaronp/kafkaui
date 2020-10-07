@@ -29,6 +29,27 @@ object KafkaRoute {
     }
   }
 
+  def listOffsetsPost(list: ListOffsetsRequest => Task[Seq[ListOffsetsEntry]])(implicit runtime: EnvRuntime): HttpRoutes[Task] = {
+    HttpRoutes.of[Task] {
+      case req@POST -> Root / "kafka" / "offsets" =>
+        for {
+          request <- req.as[ListOffsetsRequest]
+          result <- list(request)
+          resp <- Ok(result)
+        } yield resp
+    }
+  }
+  def listOffsetsGet(list: Set[Topic] => Task[Seq[OffsetRange]])(implicit runtime: EnvRuntime): HttpRoutes[Task] = {
+    HttpRoutes.of[Task] {
+      case GET -> Root / "kafka" / "offsets" / topics =>
+        val topicSet = topics.split(",", -1).toSet
+        for {
+          result <- list(topicSet)
+          resp <- Ok(result)
+        } yield resp
+    }
+  }
+
   def publishBody(publish: PublishOne => Task[RecordMetadataResponse])(implicit runtime: EnvRuntime): HttpRoutes[Task] = {
     HttpRoutes.of[Task] {
       case req@POST -> Root / "kafka" / "publish" / topic / key :? PartitionOpt(partitionOpt) =>

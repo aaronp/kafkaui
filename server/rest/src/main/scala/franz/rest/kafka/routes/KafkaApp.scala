@@ -19,6 +19,8 @@ case class KafkaApp(config: Config) {
       KafkaRoute.describeCluster(admin.describeCluster) <+>
       KafkaRoute.metrics(admin.metrics) <+>
       KafkaRoute.repartition(admin.createPartitions) <+>
+      KafkaRoute.listOffsetsPost(admin.listOffsets) <+>
+      KafkaRoute.listOffsetsGet(admin.listOffsetsForTopics) <+>
       ConsumerGroupRoutes.consumerGroupStats(admin.consumerGroupStats) <+>
       ConsumerGroupRoutes.allConsumerGroupStats(admin.consumerGroupStats) <+>
       ConsumerGroupRoutes.listConsumerGroups(admin.listConsumerGroups) <+>
