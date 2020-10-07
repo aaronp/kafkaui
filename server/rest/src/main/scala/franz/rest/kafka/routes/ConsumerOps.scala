@@ -2,11 +2,11 @@ package franz.rest.kafka.routes
 
 import com.typesafe.config.Config
 
-case class ConsumerServices() {
+case class ConsumerOps() {
 
 }
 
-object ConsumerServices {
+object ConsumerOps {
   def apply(rootConfig : Config) = {
 
   }

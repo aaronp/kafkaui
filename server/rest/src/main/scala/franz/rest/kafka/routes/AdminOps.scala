@@ -6,12 +6,12 @@ import java.util.concurrent.TimeUnit
 
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
-import franz.rest.kafka.routes.AdminServices.CreateTopic
+import franz.rest.kafka.routes.AdminOps.CreateTopic
 import io.circe.Json
 import io.circe.syntax._
 import kafka4m.admin.{ConsumerGroupStats, RichKafkaAdmin}
 import kafka4m.util.Props
-import org.apache.kafka.clients.admin.{AdminClient, ListTopicsOptions, TopicDescription}
+import org.apache.kafka.clients.admin._
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.acl.AclOperation
 import org.apache.kafka.common.metrics.KafkaMetric
@@ -22,7 +22,7 @@ import scala.collection.mutable
 import scala.concurrent.duration.FiniteDuration
 import scala.jdk.CollectionConverters._
 
-case class AdminServices(admin: RichKafkaAdmin, requestTimeout: FiniteDuration) extends StrictLogging {
+case class AdminOps(admin: RichKafkaAdmin, requestTimeout: FiniteDuration) extends StrictLogging {
 
   type ConsumerGroupId = String
   type Topic = String
@@ -37,8 +37,8 @@ case class AdminServices(admin: RichKafkaAdmin, requestTimeout: FiniteDuration) 
     admin.admin.describeCluster()
     admin.admin.describeLogDirs(???)
     admin.admin.electLeaders(???, ???)
-
     admin.admin.metrics()
+
     //admin.admin.alterPartitionReassignments()
   }
 
@@ -46,6 +46,14 @@ case class AdminServices(admin: RichKafkaAdmin, requestTimeout: FiniteDuration) 
     def asTask = {
       Task[A](future.get(requestTimeout.toMillis, TimeUnit.MILLISECONDS))
     }
+  }
+
+  def createPartitions(request: CreatePartitionRequest): Task[Set[Topic]] = {
+    val newPartitions = request.newPartitions.view.mapValues(_.asNewPartitions).toMap.asJava
+    for {
+      createResult: CreatePartitionsResult <- Task(admin.admin.createPartitions(newPartitions, (new CreatePartitionsOptions).validateOnly(request.validateOnly)))
+      _ <- createResult.all().asTask
+    } yield createResult.values.keySet().asScala.toSet
   }
 
   def metrics(): Task[List[(MetricKey, String)]] = {
@@ -140,7 +148,7 @@ case class AdminServices(admin: RichKafkaAdmin, requestTimeout: FiniteDuration) 
 
 }
 
-object AdminServices {
+object AdminOps {
 
   case class CreateTopic(name: String, numPartitions: Int = 1, replicationFactor: Short = 1)
 
@@ -148,7 +156,7 @@ object AdminServices {
     implicit val codec = io.circe.generic.semiauto.deriveCodec[CreateTopic]
   }
 
-  def apply(rootConfig: Config): AdminServices = {
+  def apply(rootConfig: Config): AdminOps = {
 
     import args4c.implicits._
     val kafkaCfg = rootConfig.getConfig("franz.kafka.admin")
@@ -156,6 +164,6 @@ object AdminServices {
 
     val props: Properties = Props.propertiesForConfig(kafkaCfg)
     val admin: AdminClient = AdminClient.create(props)
-    AdminServices(new RichKafkaAdmin(admin), requestTimeout)
+    AdminOps(new RichKafkaAdmin(admin), requestTimeout)
   }
 }

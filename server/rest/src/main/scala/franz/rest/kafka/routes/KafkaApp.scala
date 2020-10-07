@@ -9,9 +9,9 @@ import zio.{Task, ZIO}
 
 case class KafkaApp(config: Config) {
 
-  def routes(implicit runtime: EnvRuntime): ZIO[ProducerServices, Throwable, HttpRoutes[Task]] = {
+  def routes(implicit runtime: EnvRuntime): ZIO[ProducerOps, Throwable, HttpRoutes[Task]] = {
 
-    val admin = AdminServices(config)
+    val admin = AdminOps(config)
     val adminRoutes: HttpRoutes[Task] = KafkaRoute.listTopics(internal => admin.topics(internal)) <+>
       KafkaRoute.createTopic(admin.createTopic) <+>
       KafkaRoute.allConsumerGroupStats(admin.consumerGroupStats) <+>
@@ -21,8 +21,9 @@ case class KafkaApp(config: Config) {
       KafkaRoute.partitionsForTopicsPost(admin.partitionsForTopic) <+>
       KafkaRoute.describeCluster(admin.describeCluster) <+>
       KafkaRoute.metrics(admin.metrics) <+>
+      KafkaRoute.repartition(admin.createPartitions)
 
-    val publishRoutes = ZIO.environment[ProducerServices].map { publish =>
+    val publishRoutes = ZIO.environment[ProducerOps].map { publish =>
       KafkaRoute.publish(publish.push) <+>
         KafkaRoute.publishBody(publish.push)
     }

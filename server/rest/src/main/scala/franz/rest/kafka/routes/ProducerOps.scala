@@ -6,7 +6,7 @@ import com.typesafe.config.{Config, ConfigFactory}
 import kafka4m.producer.RichKafkaProducer
 import zio.{Task, ZIO}
 
-class ProducerServices private(val producer: RichKafkaProducer[String, Array[Byte]]) extends AutoCloseable {
+class ProducerOps private(val producer: RichKafkaProducer[String, Array[Byte]]) extends AutoCloseable {
 
   override def close(): Unit = producer.close()
 
@@ -27,13 +27,13 @@ class ProducerServices private(val producer: RichKafkaProducer[String, Array[Byt
   }
 }
 
-object ProducerServices {
-  def apply(rootConfig: Config = ConfigFactory.load()): Task[ProducerServices] = {
+object ProducerOps {
+  def apply(rootConfig: Config = ConfigFactory.load()): Task[ProducerOps] = {
     implicit val keySerializer = new org.apache.kafka.common.serialization.StringSerializer
     implicit val valueSerializer = new org.apache.kafka.common.serialization.ByteArraySerializer
     Task {
       val publisher = RichKafkaProducer.forConfig(rootConfig.getConfig("franz.kafka.producer"), keySerializer, valueSerializer)
-      new ProducerServices(publisher)
+      new ProducerOps(publisher)
     }
   }
 }

@@ -5,14 +5,14 @@ import java.util.UUID
 import franz.rest.BaseTest
 import zio.{URIO, ZIO}
 
-class ProducerServicesTest extends BaseTest {
+class ProducerOpsTest extends BaseTest {
 
   "ProducerServices.push" should {
     "push publish PublishOne values" in {
 
       val topic = nextTopic()
 
-      def pushThreeValues(svc: ProducerServices): ZIO[Any, Throwable, (RecordMetadataResponse, RecordMetadataResponse, RecordMetadataResponse)] = {
+      def pushThreeValues(svc: ProducerOps): ZIO[Any, Throwable, (RecordMetadataResponse, RecordMetadataResponse, RecordMetadataResponse)] = {
         for {
           a <- svc.push(PublishOne(topic, "key1", "data"))
           b <- svc.push(PublishOne(topic, "key2", "data"))
@@ -21,10 +21,10 @@ class ProducerServicesTest extends BaseTest {
       }
 
       // push three values all using the same ProducerServices
-      val firstThree = ProducerServices().bracket(p => URIO(p.close()), pushThreeValues)
+      val firstThree = ProducerOps().bracket(p => URIO(p.close()), pushThreeValues)
 
       // push one value with a new instance
-      val afterClose = ProducerServices().bracket(p => URIO(p.close())) { svc =>
+      val afterClose = ProducerOps().bracket(p => URIO(p.close())) { svc =>
         svc.push(PublishOne(topic, "four", "more data"))
       }
       val (RecordMetadataResponse(TopicKey(`topic`, 0), 0, ts1, 4, 4),
@@ -40,7 +40,7 @@ class ProducerServicesTest extends BaseTest {
   }
 }
 
-object ProducerServicesTest {
+object ProducerOpsTest {
 
   case class Meh(key: UUID = UUID.randomUUID()) {
     println("created meh " + key)

@@ -3,7 +3,7 @@ package franz.rest
 import cats.data.{Kleisli, OptionT}
 import com.typesafe.config.Config
 import franz.rest.config.routes.ConfigApp
-import franz.rest.kafka.routes.{KafkaApp, ProducerServices}
+import franz.rest.kafka.routes.{KafkaApp, ProducerOps}
 import org.http4s.{HttpRoutes, Request, Response}
 import org.http4s.server.middleware.{CORS, CORSConfig}
 import zio.{Task, ZIO}
@@ -15,7 +15,7 @@ import concurrent.duration._
 
 object RestRoutes {
 
-  def apply(config: Config)(implicit runtime: EnvRuntime): ZIO[ProducerServices, Throwable, HttpRoutes[Task]] = {
+  def apply(config: Config)(implicit runtime: EnvRuntime): ZIO[ProducerOps, Throwable, HttpRoutes[Task]] = {
     KafkaApp(config).routes.map { kafkaRoutes =>
       val appRoutes = ConfigApp(config).routes <+> kafkaRoutes
       // ATM cors is just on/off

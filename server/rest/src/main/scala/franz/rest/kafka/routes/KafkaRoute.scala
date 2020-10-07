@@ -2,7 +2,7 @@ package franz.rest.kafka.routes
 
 import java.util.Base64
 
-import franz.rest.kafka.routes.AdminServices.CreateTopic
+import franz.rest.kafka.routes.AdminOps.CreateTopic
 import franz.rest.{EnvRuntime, taskDsl}
 import io.circe.Json
 import io.circe.syntax._
@@ -104,6 +104,21 @@ object KafkaRoute {
         for {
           topics <- req.as[Set[String]]
           result <- partitionsForTopic(topics)
+          resp <- Ok(result)
+        } yield resp
+    }
+  }
+
+
+  /**
+   * POST /kafka/repartition
+   */
+  def repartition(onRequest: CreatePartitionRequest => Task[Set[String]])(implicit runtime: EnvRuntime): HttpRoutes[Task] = {
+    HttpRoutes.of[Task] {
+      case httpReq@POST -> Root / "kafka" / "repartition" =>
+        for {
+          request <- httpReq.as[CreatePartitionRequest]
+          result <- onRequest(request)
           resp <- Ok(result)
         } yield resp
     }

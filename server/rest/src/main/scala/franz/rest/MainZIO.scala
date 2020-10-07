@@ -3,7 +3,7 @@ package franz.rest
 import args4c.implicits._
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
-import franz.rest.kafka.routes.ProducerServices
+import franz.rest.kafka.routes.ProducerOps
 import franz.ui.routes.StaticFileRoutes
 import org.http4s.HttpRoutes
 import org.http4s.implicits.http4sKleisliResponseSyntaxOptionT
@@ -20,7 +20,7 @@ object MainZIO extends CatsApp with StrictLogging {
   override def run(args: List[String]): URIO[ZEnv, ExitCode] = {
     val config = args.toArray.asConfig().resolve()
     logger.info(s"\nStarting with\n${config.summary()}\n")
-    ProducerServices(config)
+    ProducerOps(config)
       .bracket(svc => UIO(svc.close()), svc => runWith(svc, config))
       .either
       .map {
@@ -31,7 +31,7 @@ object MainZIO extends CatsApp with StrictLogging {
       }
   }
 
-  private def runWith(producer: ProducerServices, config: Config): ZIO[Any, Throwable, ExitCode] = {
+  private def runWith(producer: ProducerOps, config: Config): ZIO[Any, Throwable, ExitCode] = {
     val host = config.getString("franz.www.host")
     val port = config.getInt("franz.www.port")
 

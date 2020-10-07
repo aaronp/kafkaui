@@ -1,6 +1,6 @@
 package franz.rest.kafka.routes
 
-import org.apache.kafka.clients.admin.{ConsumerGroupListing, TopicDescription}
+import org.apache.kafka.clients.admin.{ConsumerGroupListing, NewPartitions, TopicDescription}
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.clients.producer.RecordMetadata
 import org.apache.kafka.common.metrics.KafkaMetric
@@ -141,4 +141,24 @@ object Metric {
   def apply(value: KafkaMetric): String = {
     Try(value.metricValue()).getOrElse("").toString
   }
+}
+
+final case class CreatePartitionRequest(newPartitions: Map[String, UpdatedPartition], validateOnly: Boolean)
+object CreatePartitionRequest {
+  implicit val codec = io.circe.generic.semiauto.deriveCodec[CreatePartitionRequest]
+}
+
+final case class UpdatedPartition(totalCount: Int, newAssignments: List[List[Int]] = Nil) {
+  def asNewPartitions: NewPartitions = {
+    newAssignments match {
+      case Nil => NewPartitions.increaseTo(totalCount)
+      case list =>
+        val jList = list.map(_.map(Integer.valueOf).asJava).asJava
+        NewPartitions.increaseTo(totalCount, jList)
+    }
+  }
+}
+
+object UpdatedPartition {
+  implicit val codec = io.circe.generic.semiauto.deriveCodec[UpdatedPartition]
 }
