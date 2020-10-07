@@ -50,6 +50,7 @@ object KafkaRoute {
     }
   }
 
+
   def publishBody(publish: PublishOne => Task[RecordMetadataResponse])(implicit runtime: EnvRuntime): HttpRoutes[Task] = {
     HttpRoutes.of[Task] {
       case req@POST -> Root / "kafka" / "publish" / topic / key :? PartitionOpt(partitionOpt) =>

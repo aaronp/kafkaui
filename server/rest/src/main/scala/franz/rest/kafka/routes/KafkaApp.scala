@@ -21,6 +21,7 @@ case class KafkaApp(config: Config) {
       KafkaRoute.repartition(admin.createPartitions) <+>
       KafkaRoute.listOffsetsPost(admin.listOffsets) <+>
       KafkaRoute.listOffsetsGet(admin.listOffsetsForTopics) <+>
+      ConsumerGroupRoutes.deleteGroup(admin.deleteGroup) <+>
       ConsumerGroupRoutes.consumerGroupStats(admin.consumerGroupStats) <+>
       ConsumerGroupRoutes.allConsumerGroupStats(admin.consumerGroupStats()) <+>
       ConsumerGroupRoutes.listConsumerGroups(admin.listConsumerGroups()) <+>

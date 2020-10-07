@@ -24,6 +24,25 @@ object ConsumerGroupRoutes {
     }
   }
 
+  /**
+   * DELETE /kafka/group
+   * [...ids...]
+   *
+   * @param delete
+   * @param runtime
+   * @return
+   */
+  def deleteGroup(delete: Set[ConsumerGroupId] => Task[Set[ConsumerGroupId]])(implicit runtime: EnvRuntime): HttpRoutes[Task] = {
+    HttpRoutes.of[Task] {
+      case req@DELETE -> Root / "kafka" / "group" =>
+        for {
+          groups <- req.as[Set[String]]
+          result <- delete(groups)
+          resp <- Ok(result)
+        } yield resp
+    }
+  }
+
   def describeConsumerGroupsPost(onDescribe: (Set[Topic], Boolean) => Task[Map[ConsumerGroupId, ConsumerGroupDesc]])(implicit runtime: EnvRuntime): HttpRoutes[Task] = {
     HttpRoutes.of[Task] {
       case req@POST -> Root / "kafka" / "group" / "describe" :? IncludeAuthorizedOperationsOpt(includeAuth) =>
