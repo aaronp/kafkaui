@@ -20,7 +20,7 @@ object MainZIO extends CatsApp with StrictLogging {
   override def run(args: List[String]): URIO[ZEnv, ExitCode] = {
     val config = args.toArray.asConfig().resolve()
     logger.info(s"\nStarting with\n${config.summary()}\n")
-    ProducerOps(config)
+    Task(ProducerOps(config))
       .bracket(svc => UIO(svc.close()), svc => runWith(svc, config))
       .either
       .map {

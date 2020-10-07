@@ -4,11 +4,15 @@ import java.util.Base64
 
 import com.typesafe.config.{Config, ConfigFactory}
 import kafka4m.producer.RichKafkaProducer
-import zio.{Task, ZIO}
+import zio.{Task, UIO, ZIO}
 
 class ProducerOps private(val producer: RichKafkaProducer[String, Array[Byte]]) extends AutoCloseable {
 
   override def close(): Unit = producer.close()
+
+  def closeTask(): UIO[Unit] = Task(close()).either.unit
+
+  def push(topic: String, key: String, value: String): Task[RecordMetadataResponse] = push(PublishOne(topic, key, value))
 
   def push(request: PublishOne): ZIO[Any, Throwable, RecordMetadataResponse] = {
     Task.fromFuture { _ =>
@@ -28,12 +32,10 @@ class ProducerOps private(val producer: RichKafkaProducer[String, Array[Byte]]) 
 }
 
 object ProducerOps {
-  def apply(rootConfig: Config = ConfigFactory.load()): Task[ProducerOps] = {
+  def apply(rootConfig: Config = ConfigFactory.load()): ProducerOps = {
     implicit val keySerializer = new org.apache.kafka.common.serialization.StringSerializer
     implicit val valueSerializer = new org.apache.kafka.common.serialization.ByteArraySerializer
-    Task {
       val publisher = RichKafkaProducer.forConfig(rootConfig.getConfig("franz.kafka.producer"), keySerializer, valueSerializer)
       new ProducerOps(publisher)
-    }
   }
 }

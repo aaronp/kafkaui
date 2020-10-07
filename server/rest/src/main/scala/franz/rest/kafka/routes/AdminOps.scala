@@ -4,7 +4,7 @@ import java.util
 import java.util.Properties
 import java.util.concurrent.TimeUnit
 
-import com.typesafe.config.Config
+import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.scalalogging.StrictLogging
 import franz.rest.kafka.routes.AdminOps.CreateTopic
 import io.circe.Json
@@ -16,13 +16,16 @@ import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.acl.AclOperation
 import org.apache.kafka.common.metrics.KafkaMetric
 import org.apache.kafka.common.{KafkaFuture, MetricName, Node, TopicPartition}
-import zio.{Task, ZIO}
+import zio.{Task, UIO, ZIO}
 
 import scala.collection.mutable
 import scala.concurrent.duration.FiniteDuration
 import scala.jdk.CollectionConverters._
 
-case class AdminOps(admin: RichKafkaAdmin, requestTimeout: FiniteDuration) extends StrictLogging {
+final case class AdminOps(admin: RichKafkaAdmin, requestTimeout: FiniteDuration) extends AutoCloseable with StrictLogging {
+  override def close(): Unit = admin.close()
+
+  val closeTask: UIO[Unit] = Task(close()).either.unit
 
   private implicit def richFuture[A](future: KafkaFuture[A]) = new {
     def asTask = {
@@ -103,7 +106,7 @@ case class AdminOps(admin: RichKafkaAdmin, requestTimeout: FiniteDuration) exten
     }
   }
 
-  def describeConsumerGroups(groupIds: Set[Topic], includeAuthorizedOperations: Boolean): Task[Map[ConsumerGroupId, ConsumerGroupDesc]] = {
+  def describeConsumerGroups(groupIds: Set[ConsumerGroupId], includeAuthorizedOperations: Boolean): Task[Map[ConsumerGroupId, ConsumerGroupDesc]] = {
     for {
       result <- Task(admin.admin.describeConsumerGroups(groupIds.asJava, (new DescribeConsumerGroupsOptions).includeAuthorizedOperations(includeAuthorizedOperations)))
       byTopic <- result.all().asTask
@@ -185,7 +188,7 @@ object AdminOps {
     implicit val codec = io.circe.generic.semiauto.deriveCodec[CreateTopic]
   }
 
-  def apply(rootConfig: Config): AdminOps = {
+  def apply(rootConfig: Config = ConfigFactory.load()): AdminOps = {
 
     import args4c.implicits._
     val kafkaCfg = rootConfig.getConfig("franz.kafka.admin")

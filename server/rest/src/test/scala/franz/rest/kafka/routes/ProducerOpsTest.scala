@@ -3,7 +3,7 @@ package franz.rest.kafka.routes
 import java.util.UUID
 
 import franz.rest.BaseTest
-import zio.{URIO, ZIO}
+import zio.{Task, URIO, ZIO}
 
 class ProducerOpsTest extends BaseTest {
 
@@ -21,10 +21,10 @@ class ProducerOpsTest extends BaseTest {
       }
 
       // push three values all using the same ProducerServices
-      val firstThree = ProducerOps().bracket(p => URIO(p.close()), pushThreeValues)
+      val firstThree = Task(ProducerOps()).bracket(p => URIO(p.close()), pushThreeValues)
 
       // push one value with a new instance
-      val afterClose = ProducerOps().bracket(p => URIO(p.close())) { svc =>
+      val afterClose = Task(ProducerOps()).bracket(p => URIO(p.close())) { svc =>
         svc.push(PublishOne(topic, "four", "more data"))
       }
       val (RecordMetadataResponse(TopicKey(`topic`, 0), 0, ts1, 4, 4),
