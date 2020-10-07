@@ -7,10 +7,8 @@ class OffsetTest extends BaseTest {
 
   "Offset" should {
     Seq[Offset](Earliest, Latest, Timestamp(123)).foreach { expected =>
-
       s"encode $expected to/from json" in {
         val json = expected.asJson
-        println(json.spaces2)
         json.as[Offset] shouldBe Right(expected)
       }
     }

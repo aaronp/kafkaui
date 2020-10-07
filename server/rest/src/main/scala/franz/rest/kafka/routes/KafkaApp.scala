@@ -16,14 +16,14 @@ case class KafkaApp(config: Config) {
       KafkaRoute.createTopic(admin.createTopic) <+>
       KafkaRoute.partitionsForTopicsGet(admin.partitionsForTopic) <+>
       KafkaRoute.partitionsForTopicsPost(admin.partitionsForTopic) <+>
-      KafkaRoute.describeCluster(admin.describeCluster) <+>
-      KafkaRoute.metrics(admin.metrics) <+>
+      KafkaRoute.describeCluster(admin.describeCluster()) <+>
+      KafkaRoute.metrics(admin.metrics()) <+>
       KafkaRoute.repartition(admin.createPartitions) <+>
       KafkaRoute.listOffsetsPost(admin.listOffsets) <+>
       KafkaRoute.listOffsetsGet(admin.listOffsetsForTopics) <+>
       ConsumerGroupRoutes.consumerGroupStats(admin.consumerGroupStats) <+>
-      ConsumerGroupRoutes.allConsumerGroupStats(admin.consumerGroupStats) <+>
-      ConsumerGroupRoutes.listConsumerGroups(admin.listConsumerGroups) <+>
+      ConsumerGroupRoutes.allConsumerGroupStats(admin.consumerGroupStats()) <+>
+      ConsumerGroupRoutes.listConsumerGroups(admin.listConsumerGroups()) <+>
       ConsumerGroupRoutes.describeConsumerGroupsPost(admin.describeConsumerGroups) <+>
       ConsumerGroupRoutes.describeConsumerGroupsGet(admin.describeConsumerGroups)
 

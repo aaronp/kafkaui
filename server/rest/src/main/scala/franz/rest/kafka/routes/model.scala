@@ -1,11 +1,13 @@
 package franz.rest.kafka.routes
 
+import io.circe.Decoder.Result
+import io.circe.{Codec, HCursor, Json}
 import org.apache.kafka.clients.admin.ListOffsetsResult.ListOffsetsResultInfo
 import org.apache.kafka.clients.admin._
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.clients.producer.RecordMetadata
-import org.apache.kafka.common.metrics.KafkaMetric
 import org.apache.kafka.common._
+import org.apache.kafka.common.metrics.KafkaMetric
 
 import scala.jdk.CollectionConverters._
 import scala.util.Try
@@ -146,11 +148,6 @@ object Metric {
   }
 }
 
-final case class CreatePartitionRequest(newPartitions: Map[String, UpdatedPartition], validateOnly: Boolean)
-
-object CreatePartitionRequest {
-  implicit val codec = io.circe.generic.semiauto.deriveCodec[CreatePartitionRequest]
-}
 
 final case class UpdatedPartition(totalCount: Int, newAssignments: List[List[Int]] = Nil) {
   def asNewPartitions: NewPartitions = {
@@ -167,6 +164,11 @@ object UpdatedPartition {
   implicit val codec = io.circe.generic.semiauto.deriveCodec[UpdatedPartition]
 }
 
+final case class CreatePartitionRequest(newPartitions: Map[String, UpdatedPartition], validateOnly: Boolean)
+
+object CreatePartitionRequest {
+  implicit val codec = io.circe.generic.semiauto.deriveCodec[CreatePartitionRequest]
+}
 
 case class ConsumerGroupMember(consumerId: String,
                                groupInstanceId: Option[String],
@@ -175,6 +177,8 @@ case class ConsumerGroupMember(consumerId: String,
                                assignment: Set[TopicKey])
 
 object ConsumerGroupMember {
+  implicit val codec = io.circe.generic.semiauto.deriveCodec[ConsumerGroupMember]
+
   def apply(value: MemberDescription): ConsumerGroupMember = {
     ConsumerGroupMember(
       value.consumerId,
@@ -214,9 +218,9 @@ object ConsumerGroupDesc {
 sealed trait Offset {
   def asJava: OffsetSpec = {
     this match {
-      case Latest => OffsetSpec.LatestSpec
-      case Earliest => OffsetSpec.EarliestSpec
-      case Timestamp(at) => new OffsetSpec.TimestampSpec(at)
+      case Latest => OffsetSpec.latest()
+      case Earliest => OffsetSpec.earliest()
+      case Timestamp(at) => OffsetSpec.forTimestamp(at)
     }
   }
 }
@@ -236,9 +240,22 @@ object Offset {
 
   def earliest = Earliest
 
-  import io.circe.generic.extras.semiauto._
+  implicit object codec extends Codec[Offset] {
+    override def apply(c: HCursor): Result[Offset] = {
+      c.as[String] match {
+        case Right("latest") => Right(Latest)
+        case Right("earliest") => Right(Earliest)
+        case _ => c.as[Long].map(Timestamp.apply)
+      }
+    }
 
-  implicit val codec = deriveEnumerationCodec[Offset]
+    override def apply(a: Offset): Json = a match {
+      case Latest => Json.fromString("latest")
+      case Earliest => Json.fromString("earliest")
+      case Timestamp(ts) => Json.fromLong(ts)
+    }
+  }
+
 }
 
 final case class ReadPositionAt(topicPartition: TopicKey, at: Offset)
@@ -267,6 +284,21 @@ final case class ListOffsetsRequest(topics: List[ReadPositionAt], readUncommitte
 
 object ListOffsetsRequest {
   implicit val codec = io.circe.generic.semiauto.deriveCodec[ListOffsetsRequest]
+}
+
+
+final case class OffsetInfo(offset: Long, timestamp: Long, leaderEpoch: Option[Long])
+
+object OffsetInfo {
+  def apply(value: ListOffsetsResultInfo): OffsetInfo = {
+    OffsetInfo(
+      value.offset(),
+      value.timestamp(),
+      Try(value.leaderEpoch().get.toLong).toOption
+    )
+  }
+
+  implicit val codec = io.circe.generic.semiauto.deriveCodec[OffsetInfo]
 }
 
 final case class OffsetRange(topic: TopicKey, earliest: OffsetInfo, latest: OffsetInfo)
@@ -304,18 +336,4 @@ object ListOffsetsEntry {
       case (k, o) => ListOffsetsEntry(k, o)
     }.toSeq
   }
-}
-
-final case class OffsetInfo(offset: Long, timestamp: Long, leaderEpoch: Option[Long])
-
-object OffsetInfo {
-  def apply(value: ListOffsetsResultInfo): OffsetInfo = {
-    OffsetInfo(
-      value.offset(),
-      value.timestamp(),
-      Try(value.leaderEpoch().get.toLong).toOption
-    )
-  }
-
-  implicit val codec = io.circe.generic.semiauto.deriveCodec[OffsetInfo]
 }
