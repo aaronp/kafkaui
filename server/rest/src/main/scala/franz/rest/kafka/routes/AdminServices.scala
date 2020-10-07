@@ -10,15 +10,33 @@ import io.circe.Json
 import io.circe.syntax._
 import kafka4m.admin.{ConsumerGroupStats, RichKafkaAdmin}
 import kafka4m.util.Props
-import org.apache.kafka.clients.admin.{AdminClient, ListTopicsOptions}
+import org.apache.kafka.clients.admin.{AdminClient, ListTopicsOptions, TopicDescription}
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.TopicPartition
 import zio.{Task, ZIO}
 
+import scala.collection.mutable
 import scala.concurrent.duration.FiniteDuration
 
 case class AdminServices(admin: RichKafkaAdmin, requestTimeout: FiniteDuration) extends StrictLogging {
 
+  type ConsumerGroupId = String
+  type Topic = String
+  type Partition = Int
+
+  def rebalance() = {
+    admin.admin.createPartitions(???, ???)
+    admin.admin.deleteConsumerGroupOffsets(???, ???)
+    admin.admin.deleteConsumerGroups(???)
+    admin.admin.deleteTopics(???)
+    admin.admin.deleteRecords(???, ???)
+    admin.admin.describeCluster()
+    admin.admin.describeLogDirs(???)
+    admin.admin.electLeaders(???, ???)
+
+    admin.admin.metrics()
+    //admin.admin.alterPartitionReassignments()
+  }
 
   def topics(listInternal: Boolean): Task[Map[String, Boolean]] = {
     Task.fromFuture { implicit ec =>
@@ -31,9 +49,14 @@ case class AdminServices(admin: RichKafkaAdmin, requestTimeout: FiniteDuration) 
     }
   }
 
-  type ConsumerGroupId = String
-  type Topic = String
-  type Partition = Int
+  def partitionsForTopic(topics: Set[String]): Task[Map[Topic, TopicDesc]] = {
+    import scala.jdk.CollectionConverters._
+    Task {
+      val result = admin.admin.describeTopics(topics.asJava)
+      val resultsByTopic: mutable.Map[Topic, TopicDescription] = result.all().get(requestTimeout.toMillis, TimeUnit.MILLISECONDS).asScala
+      resultsByTopic.view.mapValues(TopicDesc.apply).toMap
+    }
+  }
 
   def consumerGroupStats(): Task[Json] = {
     Task.fromFuture(implicit ec => admin.consumerGroupsStats).map { stats: Seq[ConsumerGroupStats] =>

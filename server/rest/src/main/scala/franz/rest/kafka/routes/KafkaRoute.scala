@@ -35,9 +35,7 @@ object KafkaRoute {
       case req@POST -> Root / "kafka" / "publish" / topic / key :? PartitionOpt(partitionOpt) =>
         val bad: EntityDecoder[Task, Array[Byte]] = EntityDecoder.byteArrayDecoder[Task]
         val decoded: DecodeResult[Task, Array[Byte]] = bad.decode(req, true)
-//        val bytesT: Task[Array[Byte]] = decoded.getOrElse(Task.fail(new Exception("Couldn't read bytes")))
         val bytesT: Task[Array[Byte]] = decoded.rethrowT
-
         for {
           bytes <- bytesT
           base64 = Base64.getEncoder.encodeToString(bytes)
@@ -57,6 +55,34 @@ object KafkaRoute {
         listTopicsTask(listInternal.getOrElse(false)).flatMap { topics =>
           Ok(topics)
         }
+    }
+  }
+
+  /**
+   * GET /kafka/partitions/<topic-list>
+   */
+  def paritionsForTopicsGet(partitionsForTopic: Set[String] => Task[Map[String, TopicDesc]])(implicit runtime: EnvRuntime): HttpRoutes[Task] = {
+    HttpRoutes.of[Task] {
+      case GET -> Root / "kafka" / "partitions" / topics =>
+        val topicSet = topics.split(",", -1).toSet.map(_.trim)
+        partitionsForTopic(topicSet).flatMap { topics =>
+          Ok(topics)
+        }
+    }
+  }
+
+  /**
+   * POST kafka/partitions
+   * [a,b,c]
+   */
+  def partitionsForTopicsPost(partitionsForTopic: Set[String] => Task[Map[String, TopicDesc]])(implicit runtime: EnvRuntime): HttpRoutes[Task] = {
+    HttpRoutes.of[Task] {
+      case req@POST -> Root / "kafka" / "partitions" =>
+        for {
+          topics <- req.as[Set[String]]
+          result <- partitionsForTopic(topics)
+          resp <- Ok(result)
+        } yield resp
     }
   }
 

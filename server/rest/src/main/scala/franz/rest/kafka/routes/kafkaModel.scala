@@ -1,10 +1,11 @@
 package franz.rest.kafka.routes
 
-import org.apache.kafka.clients.admin.ConsumerGroupListing
+import org.apache.kafka.clients.admin.{ConsumerGroupListing, TopicDescription}
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.clients.producer.RecordMetadata
-import org.apache.kafka.common.TopicPartition
+import org.apache.kafka.common.{Node, TopicPartition, TopicPartitionInfo}
 
+import scala.jdk.CollectionConverters._
 import scala.util.Try
 
 case class ConsumerGroupEntry(groupId: String, isSimpleConsumerGroup: Boolean, status: Option[String])
@@ -37,7 +38,7 @@ object TopicKey {
   }
 }
 
-case class PublishOne(topic: String, key: String, value: String, partition: Option[Int] = None, isBase64 : Boolean = false)
+case class PublishOne(topic: String, key: String, value: String, partition: Option[Int] = None, isBase64: Boolean = false)
 
 object PublishOne {
   implicit val codec = io.circe.generic.semiauto.deriveCodec[PublishOne]
@@ -61,4 +62,49 @@ object RecordMetadataResponse {
       serializedValueSize = value.serializedValueSize()
     )
   }
+}
+
+final case class NodeDesc(id: Int, idString: String, host : String, port: Int, rack: Option[String])
+
+object NodeDesc {
+  def apply(value: Node): NodeDesc = {
+    new NodeDesc(
+      value.id(),
+      value.idString(),
+      value.host(),
+      value.port(),
+      Option(value.rack()),
+    )
+  }
+
+  implicit val codec = io.circe.generic.semiauto.deriveCodec[NodeDesc]
+}
+
+final case class TopicPartitionInfoDesc(partition: Int, leader: NodeDesc, replicas: Seq[NodeDesc], isr: Seq[NodeDesc])
+
+object TopicPartitionInfoDesc {
+  def apply(value: TopicPartitionInfo) = {
+    new TopicPartitionInfoDesc(value.partition(),
+      NodeDesc(value.leader()),
+      value.replicas().asScala.map(NodeDesc.apply).toSeq,
+      value.isr().asScala.map(NodeDesc.apply).toSeq
+    )
+  }
+
+  implicit val codec = io.circe.generic.semiauto.deriveCodec[TopicPartitionInfoDesc]
+}
+
+final case class TopicDesc(name: String,
+                           isInternal: Boolean,
+                           partitions: Seq[TopicPartitionInfoDesc],
+                           authorizedOperations: Set[String])
+
+object TopicDesc {
+  def apply(value: TopicDescription): TopicDesc = {
+    new TopicDesc(value.name(), value.isInternal,
+      value.partitions().asScala.map(TopicPartitionInfoDesc.apply).toSeq,
+      value.authorizedOperations().asScala.map(_.name()).toSet)
+  }
+
+  implicit val codec = io.circe.generic.semiauto.deriveCodec[TopicDesc]
 }

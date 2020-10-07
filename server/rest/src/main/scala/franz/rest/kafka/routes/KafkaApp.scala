@@ -12,21 +12,22 @@ case class KafkaApp(config: Config) {
 
   def routes(implicit runtime: EnvRuntime): ZIO[ProducerServices, Throwable, HttpRoutes[Task]] = {
 
-    //ProducerServices
     val admin = AdminServices(config)
     val adminRoutes: HttpRoutes[Task] = KafkaRoute.listTopics(internal => admin.topics(internal)) <+>
       KafkaRoute.createTopic(admin.createTopic) <+>
       KafkaRoute.allConsumerGroupStats(admin.consumerGroupStats) <+>
       KafkaRoute.consumerGroupStats(admin.consumerGroupStats) <+>
-      KafkaRoute.listConsumerGroups(admin.listConsumerGroups)
+      KafkaRoute.listConsumerGroups(admin.listConsumerGroups) <+>
+      KafkaRoute.paritionsForTopicsGet(admin.partitionsForTopic) <+>
+      KafkaRoute.partitionsForTopicsPost(admin.partitionsForTopic)
 
     val publishRoutes = ZIO.environment[ProducerServices].map { publish =>
       KafkaRoute.publish(publish.push) <+>
         KafkaRoute.publishBody(publish.push)
     }
 
-    publishRoutes.map { r =>
-      adminRoutes <+> r
+    publishRoutes.map { route =>
+      adminRoutes <+> route
     }
   }
 
