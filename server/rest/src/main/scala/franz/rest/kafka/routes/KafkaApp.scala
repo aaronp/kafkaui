@@ -18,8 +18,9 @@ case class KafkaApp(config: Config) {
       KafkaRoute.allConsumerGroupStats(admin.consumerGroupStats) <+>
       KafkaRoute.consumerGroupStats(admin.consumerGroupStats) <+>
       KafkaRoute.listConsumerGroups(admin.listConsumerGroups) <+>
-      KafkaRoute.paritionsForTopicsGet(admin.partitionsForTopic) <+>
-      KafkaRoute.partitionsForTopicsPost(admin.partitionsForTopic)
+      KafkaRoute.partitionsForTopicsGet(admin.partitionsForTopic) <+>
+      KafkaRoute.partitionsForTopicsPost(admin.partitionsForTopic) <+>
+      KafkaRoute.describeCluster(admin.describeCluster) <+>
 
     val publishRoutes = ZIO.environment[ProducerServices].map { publish =>
       KafkaRoute.publish(publish.push) <+>

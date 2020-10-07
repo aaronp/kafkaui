@@ -1,6 +1,6 @@
 package franz.rest.kafka.routes
 
-import org.apache.kafka.clients.admin.{ConsumerGroupListing, TopicDescription}
+import org.apache.kafka.clients.admin.{ConsumerGroupListing, DescribeClusterResult, TopicDescription}
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.clients.producer.RecordMetadata
 import org.apache.kafka.common.{Node, TopicPartition, TopicPartitionInfo}
@@ -64,7 +64,7 @@ object RecordMetadataResponse {
   }
 }
 
-final case class NodeDesc(id: Int, idString: String, host : String, port: Int, rack: Option[String])
+final case class NodeDesc(id: Int, idString: String, host: String, port: Int, rack: Option[String])
 
 object NodeDesc {
   def apply(value: Node): NodeDesc = {
@@ -107,4 +107,14 @@ object TopicDesc {
   }
 
   implicit val codec = io.circe.generic.semiauto.deriveCodec[TopicDesc]
+}
+
+final case class DescribeCluster(nodes: Seq[NodeDesc],
+                                 controller: NodeDesc,
+                                 clusterId: String,
+                                 authorizedOperations: Set[String])
+
+object DescribeCluster {
+  implicit val codec = io.circe.generic.semiauto.deriveCodec[DescribeCluster]
+
 }

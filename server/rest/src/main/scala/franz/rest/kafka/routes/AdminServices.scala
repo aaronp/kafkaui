@@ -1,5 +1,6 @@
 package franz.rest.kafka.routes
 
+import java.util
 import java.util.Properties
 import java.util.concurrent.TimeUnit
 
@@ -12,11 +13,13 @@ import kafka4m.admin.{ConsumerGroupStats, RichKafkaAdmin}
 import kafka4m.util.Props
 import org.apache.kafka.clients.admin.{AdminClient, ListTopicsOptions, TopicDescription}
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
-import org.apache.kafka.common.TopicPartition
+import org.apache.kafka.common.acl.AclOperation
+import org.apache.kafka.common.{KafkaFuture, Node, TopicPartition}
 import zio.{Task, ZIO}
 
 import scala.collection.mutable
 import scala.concurrent.duration.FiniteDuration
+import scala.jdk.CollectionConverters._
 
 case class AdminServices(admin: RichKafkaAdmin, requestTimeout: FiniteDuration) extends StrictLogging {
 
@@ -38,6 +41,29 @@ case class AdminServices(admin: RichKafkaAdmin, requestTimeout: FiniteDuration) 
     //admin.admin.alterPartitionReassignments()
   }
 
+  private implicit def richFuture[A](future: KafkaFuture[A]) = new {
+    def asTask = {
+      Task[A](future.get(requestTimeout.toMillis, TimeUnit.MILLISECONDS))
+    }
+  }
+
+  def describeCluster(): Task[DescribeCluster] = {
+    for {
+      result <- Task(admin.admin.describeCluster())
+      nodes: util.Collection[Node] <- result.nodes().asTask
+      controller: Node <- result.controller().asTask
+      clusterId <- result.clusterId().asTask
+      authorizedOperations: util.Set[AclOperation] <- result.authorizedOperations().asTask
+    } yield {
+      DescribeCluster(
+        nodes.asScala.map(NodeDesc.apply).toSeq,
+        NodeDesc(controller),
+        clusterId,
+        authorizedOperations.asScala.map(_.name()).toSet
+      )
+    }
+  }
+
   def topics(listInternal: Boolean): Task[Map[String, Boolean]] = {
     Task.fromFuture { implicit ec =>
       admin.topics(new ListTopicsOptions().listInternal(listInternal))
@@ -50,7 +76,6 @@ case class AdminServices(admin: RichKafkaAdmin, requestTimeout: FiniteDuration) 
   }
 
   def partitionsForTopic(topics: Set[String]): Task[Map[Topic, TopicDesc]] = {
-    import scala.jdk.CollectionConverters._
     Task {
       val result = admin.admin.describeTopics(topics.asJava)
       val resultsByTopic: mutable.Map[Topic, TopicDescription] = result.all().get(requestTimeout.toMillis, TimeUnit.MILLISECONDS).asScala

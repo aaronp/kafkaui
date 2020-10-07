@@ -61,12 +61,24 @@ object KafkaRoute {
   /**
    * GET /kafka/partitions/<topic-list>
    */
-  def paritionsForTopicsGet(partitionsForTopic: Set[String] => Task[Map[String, TopicDesc]])(implicit runtime: EnvRuntime): HttpRoutes[Task] = {
+  def partitionsForTopicsGet(partitionsForTopic: Set[String] => Task[Map[String, TopicDesc]])(implicit runtime: EnvRuntime): HttpRoutes[Task] = {
     HttpRoutes.of[Task] {
       case GET -> Root / "kafka" / "partitions" / topics =>
         val topicSet = topics.split(",", -1).toSet.map(_.trim)
         partitionsForTopic(topicSet).flatMap { topics =>
           Ok(topics)
+        }
+    }
+  }
+
+  /**
+   * GET /kafka/cluster
+   */
+  def describeCluster(describe: Task[DescribeCluster])(implicit runtime: EnvRuntime): HttpRoutes[Task] = {
+    HttpRoutes.of[Task] {
+      case GET -> Root / "kafka" / "cluster" =>
+        describe.flatMap { result =>
+          Ok(result)
         }
     }
   }
