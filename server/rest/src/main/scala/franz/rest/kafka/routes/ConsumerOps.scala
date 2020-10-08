@@ -108,21 +108,25 @@ object ConsumerOps {
 
   implicit lazy val consumerScheduler: SchedulerService = Scheduler.io("consumers")
 
+  def nextGroupId() = s"consumer-ops-${eie.io.AlphaCounter(UUID.randomUUID())}"
+
+  val nextGroupIdTask = UIO(nextGroupId())
+
   def apply(topicOverrides: Set[Topic] = Set.empty,
-            consumerGroupId: ConsumerGroupId = s"consumer-ops-${eie.io.AlphaCounter(UUID.randomUUID())}",
-            rootConfig: Config = ConfigFactory.load()
+            consumerGroupId: ConsumerGroupId = nextGroupId(),
+            consumerConfig: Config = ConfigFactory.load().getConfig("franz.kafka.consumer")
            )(implicit scheduler: Scheduler = consumerScheduler): ConsumerOps = {
 
     val overrides = ConfigFactory.parseString(
       s"""group.id : "${consumerGroupId}"
          |auto.offset.reset: none""".stripMargin)
 
-    val config = overrides.withFallback(rootConfig.getConfig("franz.kafka.consumer")).resolve
+    val config = overrides.withFallback(consumerConfig).resolve
 
     val keyDeserializer = new org.apache.kafka.common.serialization.StringDeserializer
     val valueDeserializer = new org.apache.kafka.common.serialization.ByteArrayDeserializer
 
-    val consumer: RichKafkaConsumer[ConsumerGroupId, Array[Byte]] = RichKafkaConsumer.forConfig(config, keyDeserializer, valueDeserializer, topicOverrides)
+    val consumer = RichKafkaConsumer.forConfig(config, keyDeserializer, valueDeserializer, topicOverrides)
     new ConsumerOps(consumerGroupId, consumer)
   }
 }

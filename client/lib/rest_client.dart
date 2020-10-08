@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import 'model.dart';
+
 class RestClient {
   static JsonDecoder decoder = JsonDecoder();
   static JsonEncoder encoder = JsonEncoder.withIndent('  ');
@@ -25,4 +27,25 @@ class RestClient {
     reply.sort();
     return reply;
   }
+
+  static  Future<List<Record>> peek(PeekRequest request) async {
+    final url = '$HostPort/rest/kafka/consumer/peek';
+    final jsonBody = encoder.convert(request.asJson);
+    print('curl -XPOST -d ${jsonBody} $url');
+    http.Response response = await http.post(url, body: jsonBody);
+    final jsonResponse = decoder.convert(response.body);
+    List<dynamic> list = jsonResponse['records'];
+    final records = list.map((e) => Record.fromJson(e)).toList();
+    return records;
+  }
+
+  static  Future<RecordMetadataResponse> push(PublishOne request) async {
+    final url = '$HostPort/rest/kafka/publish';
+    final jsonBody = encoder.convert(request.asJson);
+    print('curl -XPOST -d ${jsonBody} $url');
+    http.Response response = await http.post(url, body: jsonBody);
+    final jsonResponse = decoder.convert(response.body);
+    return RecordMetadataResponse.fromJson(jsonResponse);
+  }
+
 }

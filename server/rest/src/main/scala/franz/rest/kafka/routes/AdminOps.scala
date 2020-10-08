@@ -48,7 +48,7 @@ final case class AdminOps(admin: RichKafkaAdmin, requestTimeout: FiniteDuration)
   def deleteGroup(consumerGroups: Set[ConsumerGroupId]): Task[Set[ConsumerGroupId]] = {
     for {
       r <- Task(admin.admin.deleteConsumerGroups(consumerGroups.asJava))
-      _ <- r.all().asTask.unit
+//      _ <- r.all().asTask.unit
     } yield r.deletedGroups().asScala.keySet.toSet
   }
 

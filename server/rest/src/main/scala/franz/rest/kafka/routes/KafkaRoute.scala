@@ -18,17 +18,6 @@ object KafkaRoute {
 
   object PartitionOpt extends OptionalQueryParamDecoderMatcher[Int]("partition")
 
-  def publish(publish: PublishOne => Task[RecordMetadataResponse])(implicit runtime: EnvRuntime): HttpRoutes[Task] = {
-    HttpRoutes.of[Task] {
-      case req@POST -> Root / "kafka" / "publish" =>
-        for {
-          request <- req.as[PublishOne]
-          result <- publish(request)
-          resp <- Ok(result)
-        } yield resp
-    }
-  }
-
   def listOffsetsPost(list: ListOffsetsRequest => Task[Seq[ListOffsetsEntry]])(implicit runtime: EnvRuntime): HttpRoutes[Task] = {
     HttpRoutes.of[Task] {
       case req@POST -> Root / "kafka" / "offsets" =>
@@ -51,7 +40,25 @@ object KafkaRoute {
     }
   }
 
+  def publish(publish: PublishOne => Task[RecordMetadataResponse])(implicit runtime: EnvRuntime): HttpRoutes[Task] = {
+    HttpRoutes.of[Task] {
+      case req@POST -> Root / "kafka" / "publish" =>
+        for {
+          request <- req.as[PublishOne]
+          result <- publish(request)
+          resp <- Ok(result)
+        } yield resp
+    }
+  }
 
+  /**
+   * Publish handler where the content body is taken to be the payload and the topic/key/partition/etc are taken
+   * from the URL
+   *
+   * @param publish
+   * @param runtime
+   * @return
+   */
   def publishBody(publish: PublishOne => Task[RecordMetadataResponse])(implicit runtime: EnvRuntime): HttpRoutes[Task] = {
     HttpRoutes.of[Task] {
       case req@POST -> Root / "kafka" / "publish" / topic / key :? PartitionOpt(partitionOpt) =>

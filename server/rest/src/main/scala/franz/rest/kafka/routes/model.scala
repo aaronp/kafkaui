@@ -1,10 +1,12 @@
 package franz.rest.kafka.routes
 
+import java.util.Base64
+
 import io.circe.Decoder.Result
 import io.circe.{Codec, HCursor, Json}
 import org.apache.kafka.clients.admin.ListOffsetsResult.ListOffsetsResultInfo
 import org.apache.kafka.clients.admin._
-import org.apache.kafka.clients.consumer.OffsetAndMetadata
+import org.apache.kafka.clients.consumer.{ConsumerRecord, OffsetAndMetadata}
 import org.apache.kafka.clients.producer.RecordMetadata
 import org.apache.kafka.common._
 import org.apache.kafka.common.metrics.KafkaMetric
@@ -44,7 +46,7 @@ object TopicKey {
   }
 }
 
-case class PublishOne(topic: String, key: String, value: String, partition: Option[Int] = None, isBase64: Boolean = false)
+final case class PublishOne(topic: String, key: String, value: String, partition: Option[Int] = None, isBase64: Boolean = false)
 
 object PublishOne {
   implicit val codec = io.circe.generic.semiauto.deriveCodec[PublishOne]
@@ -346,4 +348,53 @@ object ListOffsetsEntry {
       case (k, o) => ListOffsetsEntry(k, o)
     }.toSeq
   }
+}
+
+/**
+ *
+ * @param topics
+ * @param fromOffset
+ * @param limit
+ * @param partitions empty partitions means all partitions
+ */
+final case class PeekRequest(topics: Set[String], fromOffset: Long, limit: Long, partitions: Set[Int] = Set.empty)
+
+object PeekRequest {
+  implicit val codec = io.circe.generic.semiauto.deriveCodec[PeekRequest]
+}
+
+case class Record(topic: String,
+                  offset: Long,
+                  leaderEpoch: Option[Int],
+                  partition: Int,
+                  serializedKeySize: Int,
+                  serializedValueSize: Int,
+                  timestamp: Long,
+                  timestampType: String,
+                  value: String,
+                  base64: String)
+
+object Record {
+  def apply(value: ConsumerRecord[String, Array[Byte]]): Record = {
+    Record(
+      topic = value.topic,
+      offset = value.offset,
+      leaderEpoch = Try(value.leaderEpoch.get().intValue()).toOption,
+      partition = value.partition,
+      serializedKeySize = value.serializedKeySize,
+      serializedValueSize = value.serializedValueSize,
+      timestamp = value.timestamp,
+      timestampType = value.timestampType.name,
+      value = new String(value.value),
+      base64 = Base64.getEncoder.encodeToString(value.value),
+    )
+  }
+
+  implicit val codec = io.circe.generic.semiauto.deriveCodec[Record]
+}
+
+final case class PeekResponse(records: Seq[Record])
+
+object PeekResponse {
+  implicit val codec = io.circe.generic.semiauto.deriveCodec[PeekResponse]
 }
