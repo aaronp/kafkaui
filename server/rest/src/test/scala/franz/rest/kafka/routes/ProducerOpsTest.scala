@@ -2,10 +2,10 @@ package franz.rest.kafka.routes
 
 import java.util.UUID
 
-import franz.rest.BaseTest
+import franz.rest.{BaseTest, RunningKafka}
 import zio.{Task, URIO, ZIO}
 
-class ProducerOpsTest extends BaseTest {
+class ProducerOpsTest extends BaseTest with RunningKafka {
 
   "ProducerServices.push" should {
     "push publish PublishOne values" in {
@@ -38,12 +38,4 @@ class ProducerOpsTest extends BaseTest {
       ts3 should be <= ts4
     }
   }
-}
-
-object ProducerOpsTest {
-
-  case class Meh(key: UUID = UUID.randomUUID()) {
-    println("created meh " + key)
-  }
-
 }

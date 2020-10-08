@@ -11,6 +11,8 @@ services:
         published: 9094
         protocol: tcp
         mode: host
+    depends_on:
+      - zookeeper
     environment:
       HOSTNAME_COMMAND: "<HOSTNAME_COMMAND_PLACEHOLDER>"
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
@@ -27,6 +29,9 @@ services:
         published: 9095
         protocol: tcp
         mode: host
+    depends_on:
+      - zookeeper
+      - kafka0
     environment:
       HOSTNAME_COMMAND: "<HOSTNAME_COMMAND_PLACEHOLDER>"
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
@@ -43,6 +48,10 @@ services:
         published: 9096
         protocol: tcp
         mode: host
+    depends_on:
+      - zookeeper
+      - kafka0
+      - kafka1
     environment:
       HOSTNAME_COMMAND2: "docker info | grep ^Name: | cut -d' ' -f 2"
       HOSTNAME_COMMAND: "<HOSTNAME_COMMAND_PLACEHOLDER>"

@@ -1,9 +1,9 @@
 package franz.rest.kafka.routes
 
 import com.typesafe.config.ConfigFactory
-import franz.rest.BaseTest
+import franz.rest.{BaseTest, RunningKafka}
 
-class AdminOpsTest extends BaseTest {
+class AdminOpsTest extends BaseTest with RunningKafka  {
 
   "KafkaService" should {
     "be able create and read back topics" in {

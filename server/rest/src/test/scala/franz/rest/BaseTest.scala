@@ -6,10 +6,13 @@ import org.scalatest.GivenWhenThen
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import zio.ZIO
+import concurrent.duration._
 
 abstract class BaseTest extends AnyWordSpec with Matchers with GivenWhenThen {
 
   implicit val rt = zio.Runtime.default
+
+  def testTimeout = 5.seconds
 
   def nextTopic() = s"topic${UUID.randomUUID().toString}".filter(_.isLetterOrDigit)
 

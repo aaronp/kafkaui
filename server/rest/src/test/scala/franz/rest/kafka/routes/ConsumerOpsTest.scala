@@ -1,10 +1,10 @@
 package franz.rest.kafka.routes
 
-import franz.rest.BaseTest
+import franz.rest.{BaseTest, RunningKafka}
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import zio.{Task, ZIO}
 
-class ConsumerOpsTest extends BaseTest {
+class ConsumerOpsTest extends BaseTest with RunningKafka {
 
   "ConsumerOps" should {
     "work" in {
