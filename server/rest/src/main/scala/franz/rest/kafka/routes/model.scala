@@ -103,13 +103,19 @@ object TopicPartitionInfoDesc {
 final case class TopicDesc(name: String,
                            isInternal: Boolean,
                            partitions: Seq[TopicPartitionInfoDesc],
-                           authorizedOperations: Set[String])
+                           authorizedOperations: Set[String]) {
+  def asTopicPartitions: Seq[TopicPartition] = partitions.map { p =>
+    new TopicPartition(name, p.partition)
+  }
+}
 
 object TopicDesc {
   def apply(value: TopicDescription): TopicDesc = {
+    val authOps = Try(value.authorizedOperations().asScala.map(_.name()).toSet).getOrElse(Set.empty)
+
     new TopicDesc(value.name(), value.isInternal,
       value.partitions().asScala.map(TopicPartitionInfoDesc.apply).toSeq,
-      value.authorizedOperations().asScala.map(_.name()).toSet)
+      authOps)
   }
 
   implicit val codec = io.circe.generic.semiauto.deriveCodec[TopicDesc]
@@ -301,18 +307,22 @@ object OffsetInfo {
   implicit val codec = io.circe.generic.semiauto.deriveCodec[OffsetInfo]
 }
 
-final case class OffsetRange(topic: TopicKey, earliest: OffsetInfo, latest: OffsetInfo)
+final case class OffsetRange(topic: String, partition: Int, earliest: OffsetInfo, latest: OffsetInfo) {
+  def asKey = TopicKey(topic, partition)
+}
 
 object OffsetRange {
   implicit val codec = io.circe.generic.semiauto.deriveCodec[OffsetRange]
+
+  def apply(key: TopicKey, earliest: OffsetInfo, latest: OffsetInfo): OffsetRange = {
+    OffsetRange(key.topic, key.partition, earliest, latest)
+  }
 }
 
 
 object TopicOffsetsResponse {
-  def apply(
-             earliestResponse: Seq[ListOffsetsEntry],
-             latestResponse: Seq[ListOffsetsEntry]
-           ): Seq[OffsetRange] = {
+  def apply(earliestResponse: Seq[ListOffsetsEntry],
+            latestResponse: Seq[ListOffsetsEntry]): Seq[OffsetRange] = {
     val latestByKey = latestResponse.map { e =>
       e.topic -> e.offset
     }.toMap.ensuring(_.size == latestResponse.size)

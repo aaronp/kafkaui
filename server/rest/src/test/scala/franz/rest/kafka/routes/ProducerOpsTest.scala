@@ -1,7 +1,5 @@
 package franz.rest.kafka.routes
 
-import java.util.UUID
-
 import franz.rest.{BaseTest, RunningKafka}
 import zio.{Task, URIO, ZIO}
 

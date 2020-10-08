@@ -6,9 +6,11 @@ import com.typesafe.config.{Config, ConfigFactory}
 import kafka4m.consumer.RichKafkaConsumer
 import monix.execution.Scheduler
 import monix.execution.schedulers.SchedulerService
-import org.apache.kafka.clients.consumer.ConsumerRecord
+import org.apache.kafka.clients.consumer.{ConsumerRecord, KafkaConsumer}
+import org.apache.kafka.common.TopicPartition
 import zio.{Task, UIO}
 
+import scala.concurrent.Future
 import scala.jdk.CollectionConverters._
 
 /**
@@ -23,38 +25,82 @@ final case class ConsumerOps(consumerGroupId: String, consumer: RichKafkaConsume
 
   def closeTask: UIO[Unit] = UIO(close())
 
-  def seekTo(offset: Long): Task[Boolean] = Task.fromTry(consumer.seekToOffset(offset))
+  def assignments(): Task[Set[TopicPartition]] = {
+    Task {
+      val a: Set[TopicPartition] = consumer.assignments
+      val b = consumer.assignmentsAccordingToCallback
+      println(
+        s"""consumer.assignments:$a
+           |consumer.assignmentsAccordingToCallback:$b""".stripMargin)
+      a ++ b
+    }
+  }
+
+  def assign(topics: Set[TopicPartition] = Set.empty): Task[Unit] = {
+    Task.fromFuture { _ =>
+      consumer.withConsumer { c =>
+        c.consumer.assign(topics.asJava)
+      }
+    }
+  }
+
+  def seekTo(offset: Long) = {
+    Task.fromFuture { _ =>
+      consumer.withConsumer { c =>
+        c.seekToOffset(offset)
+      }
+    }.map(_.get)
+  }
+
+  def monixToZIO[A](m: monix.eval.Task[A]): Task[A] = {
+    Task.fromFuture { ec =>
+      implicit val s = Scheduler(ec)
+      m.runToFuture
+    }
+  }
 
   /**
    * @param n the number to take
    * @return
    */
   def peek(n: Long): Task[List[ConsumerRecord[ConsumerGroupId, Array[Byte]]]] = {
-    for {
-      _ <- resume()
-      d8a <- Task.fromFuture { ec =>
-        implicit val s = Scheduler(ec)
-        consumer
-          .asObservable(false)
-          .take(n)
-          .guarantee(pauseMonix)
-          .toListL
-          .runToFuture
+    take(n).flatMap { list =>
+      val count = list.size
+      println(s"\tpeek($n) => $count")
+      if (count < n) {
+        peek(n - count).map(list ++ _)
+      } else {
+        Task.succeed(list)
       }
+    }
+  }
+
+  def take(n: Long): Task[List[ConsumerRecord[ConsumerGroupId, Array[Byte]]]] = {
+    for {
+      batch <- monixToZIO(consumer.poll)
+      d8a <- monixToZIO(batch.take(n).toListL)
     } yield d8a
   }
 
+  def withKafkaConsumer[A](thunk: KafkaConsumer[String, Array[Byte]] => A): Future[A] = {
+    consumer.withConsumer { c => thunk(c.consumer) }
+  }
+
   private def pauseMonix: monix.eval.Task[Unit] = {
-    monix.eval.Task {
-      val partitions = consumer.partitions.map(_.asTopicPartition)
-      consumer.consumer.pause(partitions.asJava)
+    monix.eval.Task.fromFuture {
+      consumer.withConsumer { c =>
+        val partitions = c.partitions.map(_.asTopicPartition)
+        consumer.consumer.pause(partitions.asJava)
+      }
     }
   }
 
   private def resume(): Task[Unit] = {
     Task {
-      val partitions = consumer.partitions.map(_.asTopicPartition)
-      consumer.consumer.resume(partitions.asJava)
+      consumer.withConsumer { c =>
+        val partitions = c.partitions.map(_.asTopicPartition)
+        consumer.consumer.resume(partitions.asJava)
+      }
     }
   }
 }
