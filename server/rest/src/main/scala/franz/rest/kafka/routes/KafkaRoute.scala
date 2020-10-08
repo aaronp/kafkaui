@@ -39,6 +39,7 @@ object KafkaRoute {
         } yield resp
     }
   }
+
   def listOffsetsGet(list: Set[Topic] => Task[Seq[OffsetRange]])(implicit runtime: EnvRuntime): HttpRoutes[Task] = {
     HttpRoutes.of[Task] {
       case GET -> Root / "kafka" / "offsets" / topics =>
@@ -76,6 +77,31 @@ object KafkaRoute {
         listTopicsTask(listInternal.getOrElse(false)).flatMap { topics =>
           Ok(topics)
         }
+    }
+  }
+
+  /**
+   * POST /kafka/topics
+   */
+  def deleteTopics(delete: Set[String] => Task[Set[String]])(implicit runtime: EnvRuntime): HttpRoutes[Task] = {
+    HttpRoutes.of[Task] {
+      case req@POST -> Root / "kafka" / "topics" / "delete" => for {
+        topics <- req.as[Set[String]]
+        done <- delete(topics)
+        result <- Ok(done)
+      } yield result
+    }
+  }
+
+  /**
+   * DELETE /kafka/topic/<topic>
+   */
+  def deleteTopic(delete: Set[String] => Task[Set[String]])(implicit runtime: EnvRuntime): HttpRoutes[Task] = {
+    HttpRoutes.of[Task] {
+      case req@DELETE -> Root / "kafka" / "topic" / topic => for {
+        done <- delete(Set(topic))
+        result <- Ok(done)
+      } yield result
     }
   }
 
@@ -144,6 +170,7 @@ object KafkaRoute {
         } yield resp
     }
   }
+
   /**
    * POST /kafka/topic
    */

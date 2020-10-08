@@ -8,6 +8,7 @@ import franz.ui.routes.StaticFileRoutes
 import org.http4s.HttpRoutes
 import org.http4s.implicits.http4sKleisliResponseSyntaxOptionT
 import org.http4s.server.blaze.BlazeServerBuilder
+import org.http4s.server.middleware.Logger
 import zio._
 import zio.interop.catz._
 import zio.interop.catz.implicits._
@@ -35,15 +36,25 @@ object MainZIO extends CatsApp with StrictLogging {
     val host = config.getString("franz.www.host")
     val port = config.getInt("franz.www.port")
 
-    for {
-      restRoutes <- RestRoutes(config).provide(producer)
-      httpRoutes: HttpRoutes[Task] = org.http4s.server.Router[Task](
+    val logHeaders = config.getBoolean("franz.www.logHeaders")
+    val logBody = config.getBoolean("franz.www.logBody")
+
+    def mkRouter(restRoutes : HttpRoutes[Task]) = {
+      val httpApp = org.http4s.server.Router[Task](
         "/rest" -> restRoutes,
         "/" -> StaticFileRoutes(config).routes[Task]()
-      )
+      ).orNotFound
+      if (logHeaders || logBody) {
+        Logger.httpApp(logHeaders, logBody)(httpApp)
+      } else httpApp
+    }
+
+    for {
+      restRoutes <- RestRoutes(config).provide(producer)
+      httpRoutes = mkRouter(restRoutes)
       exitCode <- BlazeServerBuilder[Task](ExecutionContext.global)
         .bindHttp(port, host)
-        .withHttpApp(httpRoutes.orNotFound)
+        .withHttpApp(httpRoutes)
         .serve
         .compile[Task, Task, cats.effect.ExitCode]
         .drain

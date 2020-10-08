@@ -21,11 +21,15 @@ import zio.{Task, UIO, ZIO}
 import scala.collection.mutable
 import scala.concurrent.duration.FiniteDuration
 import scala.jdk.CollectionConverters._
+import scala.util.Try
 
 final case class AdminOps(admin: RichKafkaAdmin, requestTimeout: FiniteDuration) extends AutoCloseable with StrictLogging {
+
+  def requestDurationJava = java.time.Duration.ofMillis(requestTimeout.toMillis)
+
   override def close(): Unit = admin.close()
 
-  val closeTask: UIO[Unit] = Task(close()).either.unit
+  val closeTask: UIO[Unit] = Task(close()).fork.ignore
 
   private implicit def richFuture[A](future: KafkaFuture[A]) = new {
     def asTask = {
@@ -101,7 +105,7 @@ final case class AdminOps(admin: RichKafkaAdmin, requestTimeout: FiniteDuration)
         nodes.asScala.map(NodeDesc.apply).toSeq,
         NodeDesc(controller),
         clusterId,
-        authorizedOperations.asScala.map(_.name()).toSet
+        Try(authorizedOperations.asScala.map(_.name()).toSet).getOrElse(Set.empty)
       )
     }
   }
@@ -123,6 +127,15 @@ final case class AdminOps(admin: RichKafkaAdmin, requestTimeout: FiniteDuration)
         .view
         .mapValues(_.isInternal)
         .toMap
+    }
+  }
+
+  def deleteTopics(topics: Set[String]): Task[Set[ConsumerGroupId]] = {
+    for {
+      result <- Task(admin.admin.deleteTopics(topics.asJava))
+      _ <- result.all().asTask
+    } yield {
+      result.values().keySet().asScala.toSet
     }
   }
 

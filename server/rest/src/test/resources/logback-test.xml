@@ -7,6 +7,8 @@
 
   <logger name="franz.ui.routes" level="trace"/>
   <logger name="org.kafka" level="info" />
+  <logger name="kafka4m.consumer" level="debug" />
+
   <root level="info">
     <appender-ref ref="STDOUT" />
   </root>

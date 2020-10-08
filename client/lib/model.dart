@@ -1,10 +1,5 @@
-class Books {
-  Books(this.bookList);
+class ListTopicEntry {
 
-  List<String> bookList;
+  String topic;
 
-  @override
-  String toString() {
-    return 'Books{bookList: $bookList}';
-  }
 }

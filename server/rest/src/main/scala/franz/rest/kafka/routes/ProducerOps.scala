@@ -10,7 +10,7 @@ class ProducerOps private(val producer: RichKafkaProducer[String, Array[Byte]]) 
 
   override def close(): Unit = producer.close()
 
-  def closeTask(): UIO[Unit] = Task(close()).either.unit
+  val closeTask : UIO[Unit] = Task(close()).fork.ignore
 
   def push(topic: String, key: String, value: String): Task[RecordMetadataResponse] = push(PublishOne(topic, key, value))
 

@@ -2,6 +2,12 @@ package franz.rest
 
 import scala.sys.process._
 
+/**
+ * http://unicodeemoticons.com/
+ * https://lingojam.com/StylishTextGenerator
+ * https://www.ascii-art-generator.org/
+ * http://patorjk.com/software/taag/#p=display&f=Graffiti&t=Type%20Something%20
+ */
 object GoOnAheadAndJustDoubleCheckKafkaIsRunning {
   def main(args: Array[String]): Unit = {
     startIfRequired()
@@ -17,9 +23,9 @@ object GoOnAheadAndJustDoubleCheckKafkaIsRunning {
 
     val isAlreadyRunning = isRunning() && {
       println(
-        """          +------------------------------------+
-          >          | 🌠✶  🎀  𝕂𝕒𝕗𝕜𝕒 𝔸𝕝𝕣𝕖𝕒𝕕𝕪 ℝ𝕦𝕟𝕟𝕚𝕟𝕘  🎀  ✶🌠 |
-          >          +------------------------------------+
+        """          +-----------------------------------------+
+          >          | ( •_•)>⌐■-■  𝕂𝕒𝕗𝕜𝕒 𝔸𝕝𝕣𝕖𝕒𝕕𝕪 ℝ𝕦𝕟𝕟𝕚𝕟𝕘  (⌐■_■) |
+          >          +-----------------------------------------+
           >""".stripMargin('>'))
       true
     }
@@ -51,7 +57,7 @@ object GoOnAheadAndJustDoubleCheckKafkaIsRunning {
    */
   private val RunningR = s".*Up .* 0.0.0.0:([0-9]+)->[0-9]+/tcp.*".r
 
-  def upPorts(): Seq[Int] = dockerProcessOutput.collect {
+  def upPorts(): Seq[Int] = dockerProcessOutput().collect {
     case RunningR(p1) => p1.toInt
   }
 
@@ -59,7 +65,7 @@ object GoOnAheadAndJustDoubleCheckKafkaIsRunning {
 
   def dockerPsQuiet() = Seq("docker", "ps", "-q").lazyLines_!.toList
 
-  def stop(processes: Seq[String] = dockerPsQuiet) = {
+  def stop(processes: Seq[String] = dockerPsQuiet()) = {
     println(
       """
         >        +--------------------------+

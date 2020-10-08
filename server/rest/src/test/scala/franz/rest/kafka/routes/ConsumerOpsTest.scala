@@ -5,11 +5,48 @@ import java.time.ZonedDateTime
 import franz.rest.{BaseTest, RunningKafka}
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import zio.{Task, ZIO}
+import io.circe.syntax._
+import org.scalatest.concurrent.ScalaFutures
 
 class ConsumerOpsTest extends BaseTest with RunningKafka {
 
   "ConsumerOps" should {
-    "work" in {
+    "be able to read from a specified offset" in {
+      val topic = nextTopic()
+
+      def consumeTest(read: ConsumerOps, write: ProducerOps, admin: AdminOps) = {
+        for {
+          _ <- ZIO.foreach((0 until 100).toList) { i =>
+            write.push(topic, s"k$i", i.toString)
+          }
+          partitionMap <- admin.partitionsForTopic(Set(topic))
+          partitions = partitionMap.values.flatMap(_.asTopicPartitions)
+          _ <- read.assign(partitions.toSet)
+          seek <- read.seekTo(10)
+          _ = seek shouldBe true
+          firstTwo <- read.peek(2)
+          offsets <- admin.listOffsetsForTopics(Set(topic))
+        } yield (offsets, firstTwo)
+      }
+
+      val task = Task(ConsumerOps(Set(topic))).bracket(_.closeTask) { read =>
+        Task(ProducerOps()).bracket(_.closeTask) { write =>
+          Task(AdminOps()).bracket(_.closeTask) { admin =>
+            consumeTest(read, write, admin)
+          }
+        }
+      }
+
+      val (Seq(offsets), list) = task.valueFuture().futureValue
+      list.size shouldBe 2
+      list.map(_.offset()) shouldBe List(10, 11)
+      offsets.topic shouldBe topic
+      offsets.partition shouldBe 0
+      offsets.earliest.offset shouldBe 0
+      offsets.latest.offset shouldBe 100
+    }
+
+    "work" ignore {
       val topic = nextTopic()
 
       def consumeTest(read: ConsumerOps, write: ProducerOps, admin: AdminOps): Task[List[ConsumerRecord[ConsumerGroupId, Array[Byte]]]] = {
@@ -45,7 +82,6 @@ class ConsumerOpsTest extends BaseTest with RunningKafka {
           _ = println("!" * 100)
           secondTwo <- read.peek(2)
         } yield {
-          import io.circe.syntax._
           println(
             s"""
                |stats1:
@@ -80,14 +116,16 @@ class ConsumerOpsTest extends BaseTest with RunningKafka {
       }
 
       val testTask = Task(ConsumerOps(Set(topic))).bracket(_.closeTask) { read =>
-        Task(ProducerOps()).bracket(_.closeTask()) { write =>
+        Task(ProducerOps()).bracket(_.closeTask) { write =>
           Task(AdminOps()).bracket(_.closeTask) { admin =>
             consumeTest(read, write, admin)
           }
         }
-      }.value()
-      testTask.foreach(println)
-      testTask.size shouldBe 4
+      }
+
+      val r = testTask.valueFuture().futureValue
+      r.foreach(println)
+      r.size shouldBe 4
     }
   }
 }

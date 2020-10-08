@@ -23,7 +23,7 @@ final case class ConsumerOps(consumerGroupId: String, consumer: RichKafkaConsume
 
   override def close(): Unit = consumer.close()
 
-  def closeTask: UIO[Unit] = UIO(close())
+  val closeTask: UIO[Unit] = Task(close()).fork.ignore
 
   def assignments(): Task[Set[TopicPartition]] = {
     Task {
@@ -66,7 +66,6 @@ final case class ConsumerOps(consumerGroupId: String, consumer: RichKafkaConsume
   def peek(n: Long): Task[List[ConsumerRecord[ConsumerGroupId, Array[Byte]]]] = {
     take(n).flatMap { list =>
       val count = list.size
-      println(s"\tpeek($n) => $count")
       if (count < n) {
         peek(n - count).map(list ++ _)
       } else {

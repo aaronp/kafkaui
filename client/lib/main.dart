@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:kafkaui/config_widget.dart';
 
+import 'list_topics_widget.dart';
+
 void main() {
   runApp(KafkaUIApp());
 }
@@ -9,8 +11,8 @@ class KafkaUIApp extends StatelessWidget {
   static final appTheme = ThemeData(
     primarySwatch: Colors.orange,
     accentColor: Colors.blue,
-    primaryColor: Colors.grey[700],
-    primaryColorBrightness: Brightness.dark,
+    // primaryColor: Colors.grey[700],
+    // primaryColorBrightness: Brightness.dark,
     visualDensity: VisualDensity.adaptivePlatformDensity,
   );
 
@@ -18,11 +20,12 @@ class KafkaUIApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-        title: 'Kafka UI',
-        initialRoute: ConfigWidget.path,
+        title: 'Kafka',
+        initialRoute: ListTopicsWidget.path,
         theme: appTheme,
         routes: {
-          ConfigWidget.path: (context) => ConfigWidget(title: 'Config')
+          ConfigWidget.path: (context) => ConfigWidget(title: 'Config'),
+          ListTopicsWidget.path: (context) => ListTopicsWidget()
         });
   }
 }
