@@ -66,4 +66,20 @@ class RestClient {
     final jsonResponse = decoder.convert(response.body);
     return TopicDesc.fromJson(jsonResponse[topic]);
   }
+  static Future<Map<String, List<MetricEntry>>> metrics() async {
+    final url = '$HostPort/rest/kafka/metrics';
+    http.Response response = await http.get(url);
+    assert(response.statusCode == 200,
+        'Blew up w/ status: ${response.statusCode}');
+
+    Map<String, List<MetricEntry>> metrics = {};
+    final Map<String, dynamic> jsonBody = decoder.convert(response.body);
+    print('jsonBody is $jsonBody');
+    jsonBody.forEach((key, value) {
+      List<MetricEntry> entries = [];
+      value.forEach((e) => entries.add(MetricEntry.fromJson(e)));
+      metrics[key] = entries;
+    });
+    return metrics;
+  }
 }

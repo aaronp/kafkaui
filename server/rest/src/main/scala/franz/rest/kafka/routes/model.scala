@@ -141,15 +141,20 @@ object MetricKey {
   implicit val codec = io.circe.generic.semiauto.deriveCodec[MetricKey]
 
   def apply(value: MetricName): MetricKey = {
+    val label = value.name().split("-", -1).map(_.capitalize).mkString(" ")
     new MetricKey(
-      value.name(),
-      value.group(),
+      label,
+      value.group().split("-", -1).map(_.capitalize).mkString(" "),
       value.description(),
       value.tags().asScala.toMap
     )
   }
 }
 
+final case class MetricEntry(metric : MetricKey, value : String)
+object MetricEntry {
+  implicit val codec = io.circe.generic.semiauto.deriveCodec[MetricEntry]
+}
 object Metric {
   def apply(value: KafkaMetric): String = {
     Try(value.metricValue()).getOrElse("").toString

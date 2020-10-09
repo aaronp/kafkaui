@@ -57,9 +57,11 @@ class TopicPartitionInfoDescWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-        width: 300,
-        height: 500,
+    return ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: 350.0,
+          maxHeight: 250.0,
+        ),
         child: Card(
             clipBehavior: Clip.antiAlias,
             shadowColor: Colors.grey,
@@ -75,7 +77,7 @@ class TopicPartitionInfoDescWidget extends StatelessWidget {
                     style: TextStyle(color: Colors.black.withOpacity(0.6)),
                   ),
                 ),
-                Container(width: 550, height: 100, child: replicasList()),
+                Flexible(child: replicasList()),
               ],
             )));
   }
@@ -86,7 +88,8 @@ class TopicPartitionInfoDescWidget extends StatelessWidget {
         shrinkWrap: true,
         padding: const EdgeInsets.all(8),
         itemBuilder: (ctxt, index) {
-          return nodeWidget('Replica', info.replicas[index], index, Colors.blue);
+          return nodeWidget(
+              'Replica', info.replicas[index], index, Colors.blue);
         });
   }
 

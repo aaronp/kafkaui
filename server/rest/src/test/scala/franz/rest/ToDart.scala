@@ -10,12 +10,11 @@ object ToDart {
   def main(a: Array[String]) = {
 
     Seq(
-      "final case class NodeDesc(id: Int, idString: String, host: String, port: Int, rack: Option[String])",
-      "case class TopicPartitionInfoDesc(partition: Int, leader: NodeDesc, replicas: Seq[NodeDesc], isr: Seq[NodeDesc])",
-      """final case class TopicDesc(name: String,
-        |                           isInternal: Boolean,
-        |                           partitions: Seq[TopicPartitionInfoDesc],
-        |                           authorizedOperations: Set[String])""".stripMargin
+      "final case class MetricEntry(metric : MetricKey, value : String)",
+      """case class MetricKey(name: String,
+        |                           group: String,
+        |                           description: String,
+        |                           tags: Map[String, String])""".stripMargin
 
     ).map(asDart).foreach(println)
   }

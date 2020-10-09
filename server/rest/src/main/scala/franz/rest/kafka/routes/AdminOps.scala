@@ -52,14 +52,20 @@ final case class AdminOps(admin: RichKafkaAdmin, requestTimeout: FiniteDuration)
     } yield r.deletedGroups().asScala.keySet.toSet
   }
 
-  def metrics(): Task[List[(MetricKey, String)]] = {
+  def metrics(): ZIO[Any, Throwable, Map[String, List[MetricEntry]]] = {
     for {
       metrics <- Task(admin.admin.metrics())
       all = metrics.asScala.collect {
         case (name: MetricName, value: KafkaMetric) =>
-          MetricKey(name) -> Metric(value)
+          MetricEntry(MetricKey(name), Metric(value))
       }
-    } yield all.toList
+    } yield {
+      all
+        .groupBy(_.metric.group)
+        .view
+        .mapValues(_.toList)
+        .toMap
+    }
   }
 
   def listOffsetsForTopics(topics: Set[Topic]): Task[Seq[OffsetRange]] = {

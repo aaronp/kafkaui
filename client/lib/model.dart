@@ -40,7 +40,6 @@ class Record {
   String value;
   String base64;
 
-
   static Record fromJson(Map<String, dynamic> json) {
     return Record(
         json['topic'],
@@ -74,13 +73,7 @@ class Record {
 }
 
 class PublishOne {
-  PublishOne(
-      this.topic,
-      this.key,
-      this.value,
-      this.partition,
-      this.isBase64
-      );
+  PublishOne(this.topic, this.key, this.value, this.partition, this.isBase64);
 
   String topic;
   String key;
@@ -99,46 +92,29 @@ class PublishOne {
   }
 
   static PublishOne fromJson(Map<String, dynamic> json) {
-    return PublishOne(
-        json['topic'],
-        json['key'],
-        json['value'],
-        json['partition'],
-        json['isBase64']);
+    return PublishOne(json['topic'], json['key'], json['value'],
+        json['partition'], json['isBase64']);
   }
 }
 
 class TopicKey {
-  TopicKey(
-      this.topic,
-      this.partition
-      );
+  TopicKey(this.topic, this.partition);
 
   String topic;
   int partition;
 
   Map<String, Object> get asJson {
-    return {
-      'topic': topic,
-      'partition': partition
-    };
+    return {'topic': topic, 'partition': partition};
   }
 
   static TopicKey fromJson(Map<String, dynamic> json) {
-    return TopicKey(
-        json['topic'],
-        json['partition']);
+    return TopicKey(json['topic'], json['partition']);
   }
 }
 
 class RecordMetadataResponse {
-  RecordMetadataResponse(
-      this.topicPartition,
-      this.offset,
-      this.timestamp,
-      this.serializedKeySize,
-      this.serializedValueSize
-      );
+  RecordMetadataResponse(this.topicPartition, this.offset, this.timestamp,
+      this.serializedKeySize, this.serializedValueSize);
 
   TopicKey topicPartition;
   int offset;
@@ -167,59 +143,37 @@ class RecordMetadataResponse {
 }
 
 class CreatePartitionRequest {
-  CreatePartitionRequest(
-      this.newPartitions,
-      this.validateOnly
-      );
+  CreatePartitionRequest(this.newPartitions, this.validateOnly);
 
   Map<String, UpdatedPartition> newPartitions;
   bool validateOnly;
 
   Map<String, Object> get asJson {
-    return {
-      'newPartitions': newPartitions,
-      'validateOnly': validateOnly
-    };
+    return {'newPartitions': newPartitions, 'validateOnly': validateOnly};
   }
 
   static CreatePartitionRequest fromJson(Map<String, dynamic> json) {
-    return CreatePartitionRequest(
-        json['newPartitions'],
-        json['validateOnly']);
+    return CreatePartitionRequest(json['newPartitions'], json['validateOnly']);
   }
 }
 
 class UpdatedPartition {
-  UpdatedPartition(
-      this.totalCount,
-      this.newAssignments
-      );
+  UpdatedPartition(this.totalCount, this.newAssignments);
 
   int totalCount;
   List<List<int>> newAssignments;
 
   Map<String, Object> get asJson {
-    return {
-      'totalCount': totalCount,
-      'newAssignments': newAssignments
-    };
+    return {'totalCount': totalCount, 'newAssignments': newAssignments};
   }
 
   static UpdatedPartition fromJson(Map<String, dynamic> json) {
-    return UpdatedPartition(
-        json['totalCount'],
-        json['newAssignments']);
+    return UpdatedPartition(json['totalCount'], json['newAssignments']);
   }
-
 }
+
 class NodeDesc {
-  NodeDesc(
-      this.id,
-      this.idString,
-      this.host,
-      this.port,
-      this.rack
-      );
+  NodeDesc(this.id, this.idString, this.host, this.port, this.rack);
 
   int id;
   String idString;
@@ -242,21 +196,12 @@ class NodeDesc {
       return null;
     }
     return new NodeDesc(
-        json['id'],
-        json['idString'],
-        json['host'],
-        json['port'],
-        json['rack']);
+        json['id'], json['idString'], json['host'], json['port'], json['rack']);
   }
-
 }
+
 class TopicPartitionInfoDesc {
-  TopicPartitionInfoDesc(
-      this.partition,
-      this.leader,
-      this.replicas,
-      this.isr
-      );
+  TopicPartitionInfoDesc(this.partition, this.leader, this.replicas, this.isr);
 
   int partition;
   NodeDesc leader;
@@ -283,20 +228,13 @@ class TopicPartitionInfoDesc {
     json['isr']?.forEach((e) => isr.add(NodeDesc.fromJson(e)));
 
     return TopicPartitionInfoDesc(
-        json['partition'],
-        NodeDesc.fromJson(json['leader']),
-        replicas,
-        isr);
+        json['partition'], NodeDesc.fromJson(json['leader']), replicas, isr);
   }
-
 }
+
 class TopicDesc {
   TopicDesc(
-      this.name,
-      this.isInternal,
-      this.partitions,
-      this.authorizedOperations
-      );
+      this.name, this.isInternal, this.partitions, this.authorizedOperations);
 
   String name;
   bool isInternal;
@@ -313,16 +251,60 @@ class TopicDesc {
   }
 
   static TopicDesc fromJson(Map<String, dynamic> json) {
-    print('TopicDesc.fromJson($json)');
     final List<TopicPartitionInfoDesc> partitions = [];
-    json['partitions'].forEach((e) => partitions.add(TopicPartitionInfoDesc.fromJson(e)));
+    json['partitions']
+        .forEach((e) => partitions.add(TopicPartitionInfoDesc.fromJson(e)));
     final Set<String> acl = {};
     json['authorizedOperations'].forEach((e) => acl.add(e));
 
-    return new TopicDesc(
-        json['name'],
-        json['isInternal'],
-        partitions,
-        acl);
+    return new TopicDesc(json['name'], json['isInternal'], partitions, acl);
+  }
+}
+class MetricKey {
+  MetricKey(this.name, this.group, this.description, this.tags);
+
+  String name;
+  String group;
+  String description;
+  Map<String, String> tags;
+
+  Map<String, Object> get asJson {
+    return {
+      'name': name,
+      'group': group,
+      'description': description,
+      'tags': tags
+    };
+  }
+
+  static MetricKey fromJson(Map<String, dynamic> json) {
+    Map<String, String> tags = {};
+    json['tags'].forEach((k,v) => tags[k] = v.toString());
+    return MetricKey(
+        json['name'], json['group'], json['description'], tags);
+  }
+}
+
+class MetricEntry {
+  MetricEntry(
+      this.metric,
+      this.value
+      );
+
+  MetricKey metric;
+  String value;
+
+  Map<String, Object> get asJson {
+    return {
+      'metric': metric.asJson,
+      'value': value
+    };
+  }
+
+  static MetricEntry fromJson(Map<String, dynamic> json) {
+    final metric = json['metric'];
+    return MetricEntry(
+        MetricKey.fromJson(metric),
+        json['value']);
   }
 }

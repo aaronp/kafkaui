@@ -127,7 +127,7 @@ object KafkaRoute {
   /**
    * GET /kafka/metrics
    */
-  def metrics(getMetrics: Task[List[(MetricKey, String)]])(implicit runtime: EnvRuntime): HttpRoutes[Task] = {
+  def metrics(getMetrics: Task[Map[String, List[MetricEntry]]])(implicit runtime: EnvRuntime): HttpRoutes[Task] = {
     HttpRoutes.of[Task] {
       case GET -> Root / "kafka" / "metrics" => getMetrics.flatMap { result =>
         Ok(result)
