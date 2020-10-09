@@ -54,7 +54,6 @@ class _PushDataWidgetState extends State<PushDataWidget> {
     return scrollableContent(Card(
         clipBehavior: Clip.antiAlias,
         elevation: 10,
-        shadowColor: Colors.green,
         child: Column(
           children: [
             ListTile(

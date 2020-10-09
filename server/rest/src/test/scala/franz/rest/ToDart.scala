@@ -1,7 +1,5 @@
 package franz.rest
 
-import franz.rest.kafka.routes.TopicKey
-
 object ToDart {
 
   lazy val ClassName = ".* class (.*?)\\(.*".r
@@ -11,10 +9,15 @@ object ToDart {
 
   def main(a: Array[String]) = {
 
-    val dartCode = asDart(
-      """case class TopicKey(topic: String, partition: Int)""".stripMargin)
+    Seq(
+      "final case class NodeDesc(id: Int, idString: String, host: String, port: Int, rack: Option[String])",
+      "case class TopicPartitionInfoDesc(partition: Int, leader: NodeDesc, replicas: Seq[NodeDesc], isr: Seq[NodeDesc])",
+      """final case class TopicDesc(name: String,
+        |                           isInternal: Boolean,
+        |                           partitions: Seq[TopicPartitionInfoDesc],
+        |                           authorizedOperations: Set[String])""".stripMargin
 
-    println(dartCode)
+    ).map(asDart).foreach(println)
   }
 
   implicit class Tap[A](val value: A) extends AnyVal {
@@ -26,8 +29,17 @@ object ToDart {
 
 
   lazy val OptR = "Option\\[(.*)\\]".r
+  lazy val SeqR = "Seq\\[(.*)\\]".r
+  lazy val LstR = "List\\[(.*)\\]".r
+  lazy val SetR = "Set\\[(.*)\\]".r
+  lazy val MapR = "Map\\[(.*),(.*)\\]".r
 
   def typAsDart(t: String): String = t match {
+    case OptR(t) => typAsDart(t)
+    case SeqR(t) => s"List<${typAsDart(t)}>"
+    case LstR(t) => s"List<${typAsDart(t)}>"
+    case SetR(t) => s"Set<${typAsDart(t)}>"
+    case MapR(k, v) => s"Map<${typAsDart(k)}, ${typAsDart(v)}>"
     case "Int" | "Long" => "int"
     case "Boolean" => "bool"
     case other => other
@@ -36,19 +48,15 @@ object ToDart {
   case class Parameter(name: String, scalaType: String, default: Option[String]) {
     require(scalaType != null, "scalaType is null")
 
-    def dartType: String = scalaType match {
-      case OptR(t) => typAsDart(t)
-      case other => typAsDart(other)
-    }
+    def dartType: String = typAsDart(scalaType)
 
     def dartInitializer: String = scalaType match {
-      case OptR(t) => " = null"
+      case OptR(_) => " = null"
+      case SeqR(_) => " = []"
+      case SetR(_) => " = {}"
+      case LstR(_) => " = []"
+      case MapR(_,_) => " = {}"
       case _ => ""
-    }
-
-    def isParameterized = scalaType match {
-      case OptR(t) => true
-      case _ => false
     }
   }
 

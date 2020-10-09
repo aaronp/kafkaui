@@ -48,7 +48,7 @@ final case class AdminOps(admin: RichKafkaAdmin, requestTimeout: FiniteDuration)
   def deleteGroup(consumerGroups: Set[ConsumerGroupId]): Task[Set[ConsumerGroupId]] = {
     for {
       r <- Task(admin.admin.deleteConsumerGroups(consumerGroups.asJava))
-//      _ <- r.all().asTask.unit
+      //      _ <- r.all().asTask.unit
     } yield r.deletedGroups().asScala.keySet.toSet
   }
 
@@ -113,10 +113,13 @@ final case class AdminOps(admin: RichKafkaAdmin, requestTimeout: FiniteDuration)
   def describeConsumerGroups(groupIds: Set[ConsumerGroupId], includeAuthorizedOperations: Boolean): Task[Map[ConsumerGroupId, ConsumerGroupDesc]] = {
     for {
       result <- Task(admin.admin.describeConsumerGroups(groupIds.asJava, (new DescribeConsumerGroupsOptions).includeAuthorizedOperations(includeAuthorizedOperations)))
-      byTopic <- result.all().asTask
-    } yield {
-      byTopic.asScala.view.mapValues(ConsumerGroupDesc.apply).toMap
-    }
+      byTopicMap <- ZIO.foreachPar(result.describedGroups().asScala.toList) {
+        case (key, future) =>
+          future.asTask.map { result =>
+            (key, ConsumerGroupDesc(result))
+          }
+      }
+    } yield byTopicMap.toMap
   }
 
   def topics(listInternal: Boolean): Task[Map[Topic, Boolean]] = {

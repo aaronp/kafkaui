@@ -13,39 +13,57 @@ class RestClient {
   static Future<List<String>> listTopics(bool internal) async {
     http.Response response =
         await http.get('$HostPort/rest/kafka/topics?internal=$internal');
-    Map<String, dynamic> topicList = decoder.convert(response.body);
+    assert(response.statusCode == 200,
+        'Blew up w/ status: ${response.statusCode}');
+    final jsonResponse = decoder.convert(response.body);
+    print(jsonResponse);
+    Map<String, dynamic> topicList = jsonResponse;
     final list = topicList.keys.toList();
     list.sort();
     return list;
   }
 
   static Future<List<String>> deleteTopic(String topic) async {
-    http.Response response = await http.delete('$HostPort/rest/kafka/topic/$topic');
-    // http.Response response = await http.post('$HostPort/rest/kafka/topic/delete', body: {topic});
+    http.Response response =
+        await http.delete('$HostPort/rest/kafka/topic/$topic');
+    assert(response.statusCode == 200,
+        'Blew up w/ status: ${response.statusCode}');
     List<dynamic> list = decoder.convert(response.body);
     final reply = list.map((e) => e.toString()).toList();
     reply.sort();
     return reply;
   }
 
-  static  Future<List<Record>> peek(PeekRequest request) async {
+  static Future<List<Record>> peek(PeekRequest request) async {
     final url = '$HostPort/rest/kafka/consumer/peek';
     final jsonBody = encoder.convert(request.asJson);
     print('curl -XPOST -d ${jsonBody} $url');
     http.Response response = await http.post(url, body: jsonBody);
+    assert(response.statusCode == 200,
+        'Blew up w/ status: ${response.statusCode}');
     final jsonResponse = decoder.convert(response.body);
     List<dynamic> list = jsonResponse['records'];
     final records = list.map((e) => Record.fromJson(e)).toList();
     return records;
   }
 
-  static  Future<RecordMetadataResponse> push(PublishOne request) async {
+  static Future<RecordMetadataResponse> push(PublishOne request) async {
     final url = '$HostPort/rest/kafka/publish';
     final jsonBody = encoder.convert(request.asJson);
     print('curl -XPOST -d ${jsonBody} $url');
     http.Response response = await http.post(url, body: jsonBody);
+    assert(response.statusCode == 200,
+        'Blew up w/ status: ${response.statusCode}');
     final jsonResponse = decoder.convert(response.body);
     return RecordMetadataResponse.fromJson(jsonResponse);
   }
 
+  static Future<TopicDesc> partitionsForTopic(String topic) async {
+    final url = '$HostPort/rest/kafka/partitions/$topic';
+    http.Response response = await http.get(url);
+    assert(response.statusCode == 200,
+        'Blew up w/ status: ${response.statusCode}');
+    final jsonResponse = decoder.convert(response.body);
+    return TopicDesc.fromJson(jsonResponse[topic]);
+  }
 }

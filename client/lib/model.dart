@@ -165,3 +165,164 @@ class RecordMetadataResponse {
         json['serializedValueSize']);
   }
 }
+
+class CreatePartitionRequest {
+  CreatePartitionRequest(
+      this.newPartitions,
+      this.validateOnly
+      );
+
+  Map<String, UpdatedPartition> newPartitions;
+  bool validateOnly;
+
+  Map<String, Object> get asJson {
+    return {
+      'newPartitions': newPartitions,
+      'validateOnly': validateOnly
+    };
+  }
+
+  static CreatePartitionRequest fromJson(Map<String, dynamic> json) {
+    return CreatePartitionRequest(
+        json['newPartitions'],
+        json['validateOnly']);
+  }
+}
+
+class UpdatedPartition {
+  UpdatedPartition(
+      this.totalCount,
+      this.newAssignments
+      );
+
+  int totalCount;
+  List<List<int>> newAssignments;
+
+  Map<String, Object> get asJson {
+    return {
+      'totalCount': totalCount,
+      'newAssignments': newAssignments
+    };
+  }
+
+  static UpdatedPartition fromJson(Map<String, dynamic> json) {
+    return UpdatedPartition(
+        json['totalCount'],
+        json['newAssignments']);
+  }
+
+}
+class NodeDesc {
+  NodeDesc(
+      this.id,
+      this.idString,
+      this.host,
+      this.port,
+      this.rack
+      );
+
+  int id;
+  String idString;
+  String host;
+  int port;
+  String rack = null;
+
+  Map<String, Object> get asJson {
+    return {
+      'id': id,
+      'idString': idString,
+      'host': host,
+      'port': port,
+      'rack': rack
+    };
+  }
+
+  static NodeDesc fromJson(Map<String, dynamic> json) {
+    if (json == null) {
+      return null;
+    }
+    return new NodeDesc(
+        json['id'],
+        json['idString'],
+        json['host'],
+        json['port'],
+        json['rack']);
+  }
+
+}
+class TopicPartitionInfoDesc {
+  TopicPartitionInfoDesc(
+      this.partition,
+      this.leader,
+      this.replicas,
+      this.isr
+      );
+
+  int partition;
+  NodeDesc leader;
+  List<NodeDesc> replicas = [];
+  List<NodeDesc> isr = [];
+
+  Map<String, Object> get asJson {
+    return {
+      'partition': partition,
+      'leader': leader.asJson,
+      'replicas': replicas.map((e) => e.asJson),
+      'isr': isr.map((e) => e.asJson)
+    };
+  }
+
+  static TopicPartitionInfoDesc fromJson(Map<String, dynamic> json) {
+    if (json == null) {
+      return null;
+    }
+
+    final List<NodeDesc> replicas = [];
+    json['replicas'].forEach((e) => replicas.add(NodeDesc.fromJson(e)));
+    final List<NodeDesc> isr = [];
+    json['isr']?.forEach((e) => isr.add(NodeDesc.fromJson(e)));
+
+    return TopicPartitionInfoDesc(
+        json['partition'],
+        NodeDesc.fromJson(json['leader']),
+        replicas,
+        isr);
+  }
+
+}
+class TopicDesc {
+  TopicDesc(
+      this.name,
+      this.isInternal,
+      this.partitions,
+      this.authorizedOperations
+      );
+
+  String name;
+  bool isInternal;
+  List<TopicPartitionInfoDesc> partitions = [];
+  Set<String> authorizedOperations = {};
+
+  Map<String, Object> get asJson {
+    return {
+      'name': name,
+      'isInternal': isInternal,
+      'partitions': partitions?.map((e) => e.asJson),
+      'authorizedOperations': authorizedOperations
+    };
+  }
+
+  static TopicDesc fromJson(Map<String, dynamic> json) {
+    print('TopicDesc.fromJson($json)');
+    final List<TopicPartitionInfoDesc> partitions = [];
+    json['partitions'].forEach((e) => partitions.add(TopicPartitionInfoDesc.fromJson(e)));
+    final Set<String> acl = {};
+    json['authorizedOperations'].forEach((e) => acl.add(e));
+
+    return new TopicDesc(
+        json['name'],
+        json['isInternal'],
+        partitions,
+        acl);
+  }
+}
