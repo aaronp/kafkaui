@@ -35,111 +35,43 @@ class _MetricsWidgetState extends State<MetricsWidget> {
   Widget build(BuildContext context) {
     List<Widget> children = [];
     metrics.forEach((key, value) {
-      children.add(metricCard(key, value));
+      final group = Row(children: [metricTable(key, value)]);
+      // children.add(group);
+      // children.add(Row(children : [Text('$key')]));
+      children.add(metricTable(key, value));
     });
-    final colors = [
-      Colors.yellow,
-      Colors.green,
-      Colors.blue,
-      Colors.red,
-      Colors.pink,
-      Colors.deepPurple,
-    ];
-    return CustomScrollView(shrinkWrap: false, slivers: [
-      SliverGrid(
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            // mainAxisSpacing: 2.0,
-            // crossAxisSpacing: 2.0,
-            //childAspectRatio : 2,
-            crossAxisCount: 1,
-          ),
-          delegate: SliverChildBuilderDelegate(
-              (BuildContext context, int index) {
-                return Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: new Container(
-                      color: colors[index % colors.length],
-                      height: 650.0,
-                      child: children[index]),
-                );
-              },
-
-            childCount: children.length))
-    ]);
+    return ListView(children: children);
   }
 
-  Widget metricCard(String group, List<MetricEntry> metrics) {
+  Widget metricTable(String group, List<MetricEntry> metrics) {
     final List<Widget> kids = [];
     metrics.forEach((element) {
-      kids.add(metricWidget(element));
+      kids.add(metricRow(element));
     });
 
-    return CustomScrollView(shrinkWrap: true, slivers: [
-      SliverGrid(
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            mainAxisSpacing: 2.0,
-            crossAxisSpacing: 2.0,
-            //childAspectRatio : 2,
-            crossAxisCount: 6,
-          ),
-          delegate: SliverChildBuilderDelegate(
-                  (BuildContext context, int index) {
-                return Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: new Container(
-                      height: 650.0,
-                      child: kids[index]),
-                );
-              },
-
-              childCount: kids.length))
-    ]);
-  }
-  Widget metricCard2(String group, List<MetricEntry> metrics) {
-    final List<Widget> kids = [];
-    metrics.forEach((element) {
-      kids.add(metricWidget(element));
-    });
-    return ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: 350.0,
-          maxHeight: 6250.0,
-        ),
-        child: Card(
-            clipBehavior: Clip.antiAlias,
-            shadowColor: Colors.grey,
-            elevation: 10,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                ListTile(
-                  leading: Icon(FontAwesomeIcons.asymmetrik),
-                  title: Text(group),
-                  subtitle: Text(
-                    '${metrics.length} Metrics',
-                    style: TextStyle(color: Colors.black.withOpacity(0.6)),
-                  ),
-                ),
-                Wrap(spacing: 10, runSpacing: 10, children: kids)
-              ],
-            )));
+    // return ListView(children : kids);
+    return Card(
+        clipBehavior: Clip.antiAlias,
+        shadowColor: Colors.grey,
+        elevation: 10,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            ListTile(
+              leading: Icon(FontAwesomeIcons.bacteria),
+              title: Text(group),
+              subtitle: Text(
+                '${metrics.length} Metrics',
+                style: TextStyle(color: Colors.black.withOpacity(0.6)),
+              ),
+            ),
+            Wrap(spacing: 10, runSpacing: 10, children: kids)
+          ],
+        ));
   }
 
   Widget metricWidget(MetricEntry metric) {
-    final tags = <Widget>[];
-    metric.metric.tags.forEach((key, value) {
-      final chip = Chip(
-          avatar: CircleAvatar(
-            backgroundColor: Colors.grey.shade800,
-            child: Text('AB'),
-          ),
-        label : Text('${key} : ${value}')
-      );
-      tags.add(Padding(
-        padding: const EdgeInsets.fromLTRB(8.0,0,8,0),
-        child: chip,
-      ));
-    });
+    List<Widget> tags = tagWidgets(metric);
     return Card(
         clipBehavior: Clip.antiAlias,
         shadowColor: Colors.blue,
@@ -148,20 +80,67 @@ class _MetricsWidgetState extends State<MetricsWidget> {
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
             ListTile(
-              leading: Icon(FontAwesomeIcons.asymmetrik),
+              //leading: Icon(FontAwesomeIcons.asymmetrik),
               title: Text(metric.metric.name),
               subtitle: Text(
                 metric.metric.description,
                 style: TextStyle(color: Colors.black.withOpacity(0.6)),
               ),
             ),
-            Row(children : tags
-            ),
+            Wrap(children: tags),
             Text(
               metric.value,
-              style: TextStyle(color: Colors.green, fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                  color: Colors.green,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold),
             )
           ],
         ));
+  }
+
+  Widget metricRow(MetricEntry metric) {
+    List<Widget> tags = tagWidgets(metric);
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.start,
+      children: [
+        Container(
+            width: 300,
+            child: Align(
+                alignment: Alignment.topRight,
+                child: Text('${metric.metric.name}:'))),
+        Tooltip(
+          message: metric.metric.description,
+          child: Icon(Icons.info_outline_rounded),
+        ),
+        Container(
+            width: 250,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(8.0, 0, 0, 0),
+              child: Text(
+                metric.value,
+                style: TextStyle(
+                    color: Colors.deepOrange,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold),
+              ),
+            )),
+        Wrap(children: tags),
+      ],
+    );
+  }
+
+  List<Widget> tagWidgets(MetricEntry metric) {
+    final tags = <Widget>[];
+    metric.metric.tags.forEach((key, value) {
+      final chip = Chip(
+          // avatar: CircleAvatar(backgroundColor: Colors.grey.shade800, child: Text(key)),
+          label: Text('$key : $value'));
+      tags.add(Padding(
+        padding: const EdgeInsets.fromLTRB(8.0, 0, 8, 0),
+        child: chip,
+      ));
+    });
+    return tags;
   }
 }

@@ -1,7 +1,10 @@
 package franz.rest.kafka.routes
 
+import java.time.{ZoneId, ZonedDateTime}
+import java.time.format.DateTimeFormatter
 import java.util.Base64
 
+import franz.rest.kafka.routes.MetricEntry.FmtSuffixes
 import io.circe.Decoder.Result
 import io.circe.{Codec, HCursor, Json}
 import org.apache.kafka.clients.admin.ListOffsetsResult.ListOffsetsResultInfo
@@ -143,25 +146,62 @@ object MetricKey {
   def human(key: String) = {
     key.split("-", -1).map {
       case name if name.equalsIgnoreCase("io") => "IO"
+      case name if name.equalsIgnoreCase("iotime") => "IO Time"
+      case name if name.equalsIgnoreCase("ms") => "ms"
+      case name if name.equalsIgnoreCase("waittime") => "Wait Time"
       case name => name.capitalize
-    }.mkString(" ")
+    }.mkString(" ") match {
+      case key if key.equalsIgnoreCase("start time ms") => "Start Time"
+      case key => key
+    }
   }
 
   def apply(value: MetricName): MetricKey = {
-    val label = value.name().split("-", -1).map(_.capitalize).mkString(" ")
+    val label = human(value.name())
     new MetricKey(
       label,
-      value.group().split("-", -1).map(_.capitalize).mkString(" "),
+      human(value.group()),
       value.description(),
       value.tags().asScala.toMap
     )
   }
 }
 
-final case class MetricEntry(metric: MetricKey, value: String)
+final case class MetricEntry(metric: MetricKey, value: String) {
+  def fmtAsTime = {
+    val instant = java.time.Instant.ofEpochMilli(value.toLong)
+    val time = ZonedDateTime.ofInstant(instant, ZoneId.of("UTC"))
+
+    DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(time)
+  }
+
+  def formattedValue: String = metric.name.toLowerCase match {
+    case key if FmtSuffixes.exists(key.endsWith) =>
+      Try(f"${value.toDouble}%1.4f").getOrElse(value)
+    case key if key.startsWith("start time") =>
+      Try(fmtAsTime).getOrElse(value)
+    case _ => value
+  }
+}
 
 object MetricEntry {
-  implicit val codec = io.circe.generic.semiauto.deriveCodec[MetricEntry]
+
+  val FmtSuffixes = Set("rate", "ratio", "avg")
+  private val autoCodec = io.circe.generic.semiauto.deriveCodec[MetricEntry]
+
+  implicit object codec extends Codec[MetricEntry] {
+
+    import io.circe.syntax._
+
+    override def apply(a: MetricEntry): Json = {
+      Json.obj("metric" -> a.metric.asJson,
+        "value" -> Json.fromString(a.formattedValue)
+      )
+    }
+
+    override def apply(c: HCursor): Result[MetricEntry] = autoCodec(c)
+  }
+
 }
 
 object Metric {
