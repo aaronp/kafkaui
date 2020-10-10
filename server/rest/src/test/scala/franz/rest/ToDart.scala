@@ -2,7 +2,7 @@ package franz.rest
 
 object ToDart {
 
-  lazy val ClassName = ".* class (.*?)\\(.*".r
+  lazy val ClassName = ".*class (.*?)\\(.*".r
   lazy val ParamPattern = ".*?(\\w+) *: *([A-Za-z0-9\\[\\]]+).*"
   lazy val ParamR = ParamPattern.r
   lazy val ParamWithDefaultR = (ParamPattern + " *= *(.*)").r
@@ -10,11 +10,8 @@ object ToDart {
   def main(a: Array[String]) = {
 
     Seq(
-      "final case class MetricEntry(metric : MetricKey, value : String)",
-      """case class MetricKey(name: String,
-        |                           group: String,
-        |                           description: String,
-        |                           tags: Map[String, String])""".stripMargin
+      "case class OffsetInfo(offset: Long, timestamp: Long, leaderEpoch: Option[Long])",
+      """class OffsetRange(topic: String, partition: Int, earliest: OffsetInfo, latest: OffsetInfo)""".stripMargin
 
     ).map(asDart).foreach(println)
   }
@@ -85,7 +82,6 @@ object ToDart {
          |    return ${className}(
          |${params.map(p => s"        json['${p.name}']").mkString("", ",\n", ");")}
          |  }
-         |
          |}""".stripMargin
     }
   }

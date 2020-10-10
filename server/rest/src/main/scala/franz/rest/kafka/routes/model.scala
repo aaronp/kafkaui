@@ -301,6 +301,7 @@ object Offset {
   def latest = Latest
 
   def earliest = Earliest
+  def at(time : Long) = Timestamp(time)
 
   implicit object codec extends Codec[Offset] {
     override def apply(c: HCursor): Result[Offset] = {

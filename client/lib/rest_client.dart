@@ -66,6 +66,19 @@ class RestClient {
     final jsonResponse = decoder.convert(response.body);
     return TopicDesc.fromJson(jsonResponse[topic]);
   }
+
+  static Future<List<OffsetRange>> offsetRangesForTopic(String topic) async {
+    final url = '$HostPort/rest/kafka/offsets/$topic';
+    http.Response response = await http.get(url);
+    assert(response.statusCode == 200,
+        'Blew up w/ status: ${response.statusCode}');
+    final jsonResponse = decoder.convert(response.body);
+
+    final range = List<OffsetRange>();
+    jsonResponse.forEach((j) => range.add(OffsetRange.fromJson(j)));
+    return range;
+  }
+
   static Future<Map<String, List<MetricEntry>>> metrics() async {
     final url = '$HostPort/rest/kafka/metrics';
     http.Response response = await http.get(url);

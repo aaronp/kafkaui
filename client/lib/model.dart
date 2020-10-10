@@ -260,6 +260,7 @@ class TopicDesc {
     return new TopicDesc(json['name'], json['isInternal'], partitions, acl);
   }
 }
+
 class MetricKey {
   MetricKey(this.name, this.group, this.description, this.tags);
 
@@ -279,32 +280,107 @@ class MetricKey {
 
   static MetricKey fromJson(Map<String, dynamic> json) {
     Map<String, String> tags = {};
-    json['tags'].forEach((k,v) => tags[k] = v.toString());
-    return MetricKey(
-        json['name'], json['group'], json['description'], tags);
+    json['tags'].forEach((k, v) => tags[k] = v.toString());
+    return MetricKey(json['name'], json['group'], json['description'], tags);
   }
 }
 
 class MetricEntry {
-  MetricEntry(
-      this.metric,
-      this.value
-      );
+  MetricEntry(this.metric, this.value);
 
   MetricKey metric;
   String value;
 
   Map<String, Object> get asJson {
-    return {
-      'metric': metric.asJson,
-      'value': value
-    };
+    return {'metric': metric.asJson, 'value': value};
   }
 
   static MetricEntry fromJson(Map<String, dynamic> json) {
     final metric = json['metric'];
-    return MetricEntry(
-        MetricKey.fromJson(metric),
-        json['value']);
+    return MetricEntry(MetricKey.fromJson(metric), json['value']);
+  }
+}
+
+class ReadPositionAt {
+  ReadPositionAt(this.topicPartition, this.at);
+
+  TopicKey topicPartition;
+
+  // one of 'earliest', 'latest' or a timestamp epoch int
+  String at;
+
+  Map<String, Object> get asJson {
+    return {'topicPartition': topicPartition.asJson, 'at': at};
+  }
+
+  static ReadPositionAt fromJson(Map<String, dynamic> json) {
+    return ReadPositionAt(
+        TopicKey.fromJson(json['topicPartition']), json['at']);
+  }
+}
+
+class ListOffsetsRequest {
+  ListOffsetsRequest(this.topics, this.readUncommitted);
+
+  List<ReadPositionAt> topics = [];
+  bool readUncommitted;
+
+  Map<String, Object> get asJson {
+    return {
+      'topics': topics.map((e) => e.asJson).toList(growable: false),
+      'readUncommitted': readUncommitted
+    };
+  }
+
+  static ListOffsetsRequest fromJson(Map<String, dynamic> json) {
+    List<ReadPositionAt> positions = [];
+    json['topics'].forEach((i) => positions.add(ReadPositionAt.fromJson(i)));
+    return ListOffsetsRequest(positions, json['readUncommitted']);
+  }
+}
+
+class OffsetInfo {
+  OffsetInfo(this.offset, this.timestamp, this.leaderEpoch);
+
+  int offset;
+  int timestamp;
+  int leaderEpoch = null;
+
+  Map<String, Object> get asJson {
+    return {
+      'offset': offset,
+      'timestamp': timestamp,
+      'leaderEpoch': leaderEpoch
+    };
+  }
+
+  static OffsetInfo fromJson(Map<String, dynamic> json) {
+    return OffsetInfo(json['offset'], json['timestamp'], json['leaderEpoch']);
+  }
+}
+
+class OffsetRange {
+  OffsetRange(this.topic, this.partition, this.earliest, this.latest);
+
+  String topic;
+  int partition;
+  OffsetInfo earliest;
+  OffsetInfo latest;
+
+  Map<String, Object> get asJson {
+    return {
+      'topic': topic,
+      'partition': partition,
+      'earliest': earliest.asJson,
+      'latest': latest.asJson
+    };
+  }
+
+  static OffsetRange fromJson(Map<String, dynamic> json) {
+    return OffsetRange(
+        json['topic'],
+        json['partition'],
+        OffsetInfo.fromJson(json['earliest']),
+        OffsetInfo.fromJson(json['latest']));
   }
 }

@@ -86,6 +86,23 @@ final case class AdminOps(admin: RichKafkaAdmin, requestTimeout: FiniteDuration)
     }
   }
 
+  def listOffsetsForTopic(topic: Topic, offset : Offset): ZIO[Any, Throwable, Seq[ListOffsetsEntry]] = {
+    def asRequest(topicDesc: Map[Topic, TopicDesc]): ListOffsetsRequest = {
+      val positions = for {
+        (topic, desc) <- topicDesc
+        partition <- desc.partitions
+      } yield ReadPositionAt(TopicKey(topic, partition.partition), offset)
+      ListOffsetsRequest(positions.toList, false)
+    }
+
+    for {
+      topicDesc <- partitionsForTopic(Set(topic))
+      entries <- listOffsets(asRequest(topicDesc))
+    } yield {
+      entries
+    }
+  }
+
   def listOffsets(request: ListOffsetsRequest): Task[Seq[ListOffsetsEntry]] = {
     for {
       result <- Task(admin.admin.listOffsets(request.asJavaMap, request.options))

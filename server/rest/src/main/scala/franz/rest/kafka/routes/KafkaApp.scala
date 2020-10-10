@@ -19,16 +19,17 @@ case class KafkaApp(config: Config) {
       ConsumerRoutes.peekGet(r => onPeekRequest(r).provide(Has(admin))) <+>
         ConsumerRoutes.peekPost(r => onPeekRequest(r).provide(Has(admin)))
 
-    val publishRoutes = ZIO.environment[ProducerOps].map { publish =>
+    val publishRoutesIO = ZIO.environment[ProducerOps].map { publish =>
       KafkaRoute.publish(publish.push) <+>
         KafkaRoute.publishBody(publish.push)
     }
 
-    publishRoutes.map { route =>
-      adminRoutes(admin) <+>
-        consumerRoutes <+>
-        consumerGroupRoutes(admin) <+>
-        route
+    publishRoutesIO.map { publishRoutes =>
+      adminRoutes(admin)
+      // <+>
+//        consumerRoutes <+>
+//        consumerGroupRoutes(admin) <+>
+//        publishRoutes
     }
   }
 
@@ -51,7 +52,7 @@ case class KafkaApp(config: Config) {
       }
   }
 
-  private def adminRoutes(admin: AdminOps)(implicit runtime: EnvRuntime) = {
+  private def adminRoutes(admin: AdminOps)(implicit runtime: EnvRuntime): HttpRoutes[Task] = {
     KafkaRoute.listTopics(admin.topics) <+>
       KafkaRoute.deleteTopics(admin.deleteTopics) <+>
       KafkaRoute.deleteTopic(admin.deleteTopics) <+>
@@ -62,6 +63,7 @@ case class KafkaApp(config: Config) {
       KafkaRoute.metrics(admin.metrics()) <+>
       KafkaRoute.repartition(admin.createPartitions) <+>
       KafkaRoute.listOffsetsPost(admin.listOffsets) <+>
-      KafkaRoute.listOffsetsGet(admin.listOffsetsForTopics)
+      KafkaRoute.listOffsetsGet(admin.listOffsetsForTopics) <+>
+      KafkaRoute.listOffsetsAtTime(admin.listOffsetsForTopic)
   }
 }

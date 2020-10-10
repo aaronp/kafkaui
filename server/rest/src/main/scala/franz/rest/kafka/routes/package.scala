@@ -1,6 +1,8 @@
 package franz.rest.kafka
 
-import org.apache.kafka.clients.consumer.ConsumerRecord
+import java.time.ZonedDateTime
+
+import franz.rest.time.TimeLowPriorityImplicits
 import zio.{Has, Task, ZIO}
 
 package object routes {
@@ -12,6 +14,11 @@ package object routes {
   type ConsumerSvc = Has[ConsumerOps]
   type AdminSvc = Has[AdminOps]
   type ProducerSvc = Has[ProducerOps]
+
+  def asTime(timestamp: String): Option[ZonedDateTime] = {
+    import TimeLowPriorityImplicits._
+    timestamp.asDate()
+  }
 
   /**
    * A 'peek' which will use a throw-away consumer

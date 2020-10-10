@@ -1,5 +1,6 @@
 package franz.rest.kafka.routes
 
+import java.time.ZonedDateTime
 import java.util.Base64
 
 import franz.rest.kafka.routes.AdminOps.CreateTopic
@@ -9,6 +10,8 @@ import org.http4s.circe.CirceEntityCodec._
 import org.http4s.{DecodeResult, EntityDecoder, HttpRoutes}
 import zio.Task
 import zio.interop.catz._
+
+import scala.util.Try
 
 object KafkaRoute {
 
@@ -35,6 +38,25 @@ object KafkaRoute {
         val topicSet = topics.split(",", -1).toSet
         for {
           result <- list(topicSet)
+          resp <- Ok(result)
+        } yield resp
+    }
+  }
+
+  def listOffsetsAtTime(list: (Topic, Offset) => Task[Seq[ListOffsetsEntry]])(implicit runtime: EnvRuntime): HttpRoutes[Task] = {
+    HttpRoutes.of[Task] {
+      case GET -> Root / "kafka" / "offsets" / topic / timestamp =>
+        for {
+          offset <- Task {
+            timestamp.toLowerCase match {
+              case "earliest" => Offset.earliest
+              case "latest" => Offset.latest
+              case time =>
+                val dateTime = asTime(time).getOrElse(sys.error(s"Couldn't parse '$timestamp'"))
+                Offset.at(dateTime.toInstant.toEpochMilli)
+            }
+          }
+          result: Seq[ListOffsetsEntry] <- list(topic, offset)
           resp <- Ok(result)
         } yield resp
     }

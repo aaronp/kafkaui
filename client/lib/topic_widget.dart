@@ -30,9 +30,9 @@ class TopicWidget extends StatefulWidget {
 
 class _TopicWidgetState extends State<TopicWidget> {
   @override
-  
+
   Widget build(BuildContext context) {
-    final String topic = widget.topic ?? ModalRoute
+    final String topic = widget?.topic ?? ModalRoute
         .of(context)
         .settings
         .arguments;
