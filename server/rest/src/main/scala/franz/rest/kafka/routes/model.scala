@@ -140,6 +140,13 @@ final case class MetricKey(name: String,
 object MetricKey {
   implicit val codec = io.circe.generic.semiauto.deriveCodec[MetricKey]
 
+  def human(key: String) = {
+    key.split("-", -1).map {
+      case name if name.equalsIgnoreCase("io") => "IO"
+      case name => name.capitalize
+    }.mkString(" ")
+  }
+
   def apply(value: MetricName): MetricKey = {
     val label = value.name().split("-", -1).map(_.capitalize).mkString(" ")
     new MetricKey(
@@ -151,10 +158,12 @@ object MetricKey {
   }
 }
 
-final case class MetricEntry(metric : MetricKey, value : String)
+final case class MetricEntry(metric: MetricKey, value: String)
+
 object MetricEntry {
   implicit val codec = io.circe.generic.semiauto.deriveCodec[MetricEntry]
 }
+
 object Metric {
   def apply(value: KafkaMetric): String = {
     Try(value.metricValue()).getOrElse("").toString
