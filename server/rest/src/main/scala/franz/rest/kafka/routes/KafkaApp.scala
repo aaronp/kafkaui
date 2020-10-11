@@ -25,11 +25,10 @@ case class KafkaApp(config: Config) {
     }
 
     publishRoutesIO.map { publishRoutes =>
-      adminRoutes(admin)
-      // <+>
-//        consumerRoutes <+>
-//        consumerGroupRoutes(admin) <+>
-//        publishRoutes
+      adminRoutes(admin) <+>
+        consumerRoutes <+>
+        consumerGroupRoutes(admin) <+>
+        publishRoutes
     }
   }
 

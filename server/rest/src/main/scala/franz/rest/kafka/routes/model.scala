@@ -88,15 +88,17 @@ object NodeDesc {
     )
   }
 
+  def empty = NodeDesc(-1, "", "", -1, None)
+
   implicit val codec = io.circe.generic.semiauto.deriveCodec[NodeDesc]
 }
 
 final case class TopicPartitionInfoDesc(partition: Int, leader: NodeDesc, replicas: Seq[NodeDesc], isr: Seq[NodeDesc])
 
 object TopicPartitionInfoDesc {
-  def apply(value: TopicPartitionInfo) = {
+  def apply(value: TopicPartitionInfo): TopicPartitionInfoDesc = {
     new TopicPartitionInfoDesc(value.partition(),
-      NodeDesc(value.leader()),
+      Option(value.leader()).map(NodeDesc.apply).getOrElse(NodeDesc.empty),
       value.replicas().asScala.map(NodeDesc.apply).toSeq,
       value.isr().asScala.map(NodeDesc.apply).toSeq
     )
@@ -246,7 +248,7 @@ final case class AlterPartitionRequest(targetReplicasByPartition: Seq[(TopicKey,
 }
 
 object AlterPartitionRequest {
-  def apply(entries: (TopicKey, List[Int])*): AlterPartitionRequest = {
+  def of(entries: (TopicKey, List[Int])*): AlterPartitionRequest = {
     val map: Seq[(TopicKey, Option[List[Partition]])] = entries.map {
       case (k, Nil) => (k, None)
       case (k, list) => (k, Some(list))

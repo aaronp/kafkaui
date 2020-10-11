@@ -20,7 +20,7 @@ class AdminOpsTest extends BaseTest with RunningKafka {
             created
           }
           initialPartitions <- admin.partitionsForTopic(Set(newTopic))
-          _ <- admin.updatePartitions(AlterPartitionRequest())
+          _ <- admin.updatePartitions(AlterPartitionRequest.of())
           newPartitions <- admin.partitionsForTopic(Set(newTopic))
         } yield (initialPartitions, newPartitions)
       }

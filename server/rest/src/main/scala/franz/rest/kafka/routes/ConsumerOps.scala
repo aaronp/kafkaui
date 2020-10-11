@@ -27,8 +27,8 @@ final case class ConsumerOps(consumerGroupId: String, consumer: RichKafkaConsume
 
   def assignments(): Task[Set[TopicPartition]] = {
     Task {
-      val a: Set[TopicPartition] = consumer.assignments
-      val b = consumer.assignmentsAccordingToCallback
+      val a: Set[TopicPartition] = consumer.assignments()
+      val b = consumer.assignmentsAccordingToCallback()
       println(
         s"""consumer.assignments:$a
            |consumer.assignmentsAccordingToCallback:$b""".stripMargin)
