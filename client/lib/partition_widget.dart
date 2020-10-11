@@ -64,22 +64,12 @@ class _PartitionsForTopicWidgetState extends State<PartitionsForTopicWidget> {
         clipBehavior: Clip.antiAlias,
         shadowColor: Colors.grey,
         elevation: 4,
-        child: Column(
-          children: [
-            ListTile(
-              leading: Icon(Icons.pie_chart),
-              title: Text(partitionTitle),
-            ),
-            ExpansionTile(
-              title: ButtonBar(alignment: MainAxisAlignment.start, children: [
-                RaisedButton.icon(
-                    onPressed: () => onRepartition(context, kids.length),
-                    icon: Icon(Icons.edit),
-                    label: Text('Repartition'))
-              ]),
-              children: [Wrap(spacing: 20, runSpacing: 20, children: kids)],
-            ),
-          ],
+        child: ExpansionTile(
+          title: ListTile(
+            leading: Icon(Icons.pie_chart),
+            title: Text(partitionTitle),
+          ),
+          children: [Wrap(spacing: 20, runSpacing: 20, children: kids)],
         ));
   }
 

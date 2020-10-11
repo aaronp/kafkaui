@@ -1,11 +1,9 @@
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-import 'package:kafkaui/list_topics_widget.dart';
 import 'package:kafkaui/rest_client.dart';
 
 import 'consumer_data_table.dart';
-import 'main.dart';
 import 'partition_widget.dart';
 
 void main() => runApp(
@@ -48,7 +46,23 @@ class _TopicWidgetState extends State<TopicWidget> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Topic "$selectedTopic"'),
+        //title: selectedTopic.isEmpty ? Text('Create or Choose a Kafka Topic') : Text('Topic $selectedTopic'),
+        primary: false,
+        backgroundColor: Theme.of(context).secondaryHeaderColor,
+        actions: [
+          if (selectedTopic.isNotEmpty) IconButton(
+              icon: const Icon(Icons.edit),
+              tooltip: 'Reparition',
+              onPressed: null),
+          if (selectedTopic.isNotEmpty) IconButton(
+              icon: const Icon(Icons.library_add_rounded),
+              tooltip: 'Push Data',
+              onPressed: null),
+          IconButton(
+              icon: const Icon(Icons.add_circle),
+              tooltip: 'Create Topic',
+              onPressed: null)
+        ],
       ),
       body: Padding(
           padding: const EdgeInsets.all(8.0),

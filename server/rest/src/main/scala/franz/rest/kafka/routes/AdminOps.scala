@@ -13,17 +13,20 @@ import kafka4m.admin.{ConsumerGroupStats, RichKafkaAdmin}
 import kafka4m.util.Props
 import org.apache.kafka.clients.admin._
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
+import org.apache.kafka.common.KafkaFuture.BiConsumer
 import org.apache.kafka.common.acl.AclOperation
 import org.apache.kafka.common.metrics.KafkaMetric
 import org.apache.kafka.common.{KafkaFuture, MetricName, Node, TopicPartition}
-import zio.{Task, UIO, ZIO}
+import zio.blocking.Blocking
+import zio.{Task, UIO, ZEnv, ZIO}
 
 import scala.collection.mutable
+import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.jdk.CollectionConverters._
 import scala.util.Try
 
-final case class AdminOps(admin: RichKafkaAdmin, requestTimeout: FiniteDuration) extends AutoCloseable with StrictLogging {
+final case class AdminOps(admin: RichKafkaAdmin, requestTimeout: FiniteDuration)(implicit rt : zio.Runtime[ZEnv]) extends AutoCloseable with StrictLogging {
 
   def requestDurationJava = java.time.Duration.ofMillis(requestTimeout.toMillis)
 
@@ -33,7 +36,22 @@ final case class AdminOps(admin: RichKafkaAdmin, requestTimeout: FiniteDuration)
 
   private implicit def richFuture[A](future: KafkaFuture[A]) = new {
     def asTask = {
-      Task[A](future.get(requestTimeout.toMillis, TimeUnit.MILLISECONDS))
+      val blocked: ZIO[Blocking, Throwable, A] = zio.blocking.blocking {
+//        ZIO.fromFuture(_ => Future(future.get(requestTimeout.toMillis, TimeUnit.MILLISECONDS)))
+        Task.effectAsync[A] { cb =>
+          future.whenComplete(new BiConsumer[A, Throwable]{
+            override def accept(result: A, err: Throwable): Unit = {
+              println(s"task complete w/ $result or $err")
+              if (result == null) {
+                cb(Task.fail(err))
+              } else {
+                cb(Task.succeed(result))
+              }
+            }
+          })
+        }
+      }
+      blocked.provide(rt.environment)
     }
   }
 
@@ -112,7 +130,7 @@ final case class AdminOps(admin: RichKafkaAdmin, requestTimeout: FiniteDuration)
 
   def listOffsets(request: ListOffsetsRequest): Task[Seq[ListOffsetsEntry]] = {
     for {
-      result <- Task(admin.admin.listOffsets(request.asJavaMap, request.options))
+      result: ListOffsetsResult <- Task(admin.admin.listOffsets(request.asJavaMap, request.options))
       responseMap <- result.all().asTask
     } yield {
       ListOffsetsEntry {
@@ -234,7 +252,7 @@ object AdminOps {
     implicit val codec = io.circe.generic.semiauto.deriveCodec[CreateTopic]
   }
 
-  def apply(rootConfig: Config = ConfigFactory.load()): AdminOps = {
+  def apply(rootConfig: Config = ConfigFactory.load())(implicit rt : zio.Runtime[ZEnv]): AdminOps = {
 
     import args4c.implicits._
     val kafkaCfg = rootConfig.getConfig("franz.kafka.admin")

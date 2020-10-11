@@ -155,7 +155,6 @@ class PeekDataWidget extends StatelessWidget {
         fromOffset: _provider._fromOffset,
         onRowSelect: (index) => _showDetails(context, _model[index]));
 
-    print('Building w/ ${_model}');
     return CustomPaginatedTable(
         source: _src,
         dataColumns: [
