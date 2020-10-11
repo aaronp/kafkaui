@@ -81,8 +81,9 @@ class RestClient {
 
   static Future<Set<String>> repartition(CreatePartitionRequest request) async {
     final url = '$HostPort/rest/kafka/repartition';
-    final jsonBody = request.asJson;
-    print('curl -XPOST -d ${jsonBody} $url');
+
+    final jsonBody = encoder.convert(request.asJson);
+    print('curl -XPOST -d $jsonBody $url');
     http.Response response = await http.post(url, body: jsonBody);
     assert(response.statusCode == 200,
         'Blew up w/ status: ${response.statusCode}');

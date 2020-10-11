@@ -148,8 +148,12 @@ class CreatePartitionRequest {
   Map<String, UpdatedPartition> newPartitions;
   bool validateOnly;
 
-  Map<String, Object> get asJson {
-    return {'newPartitions': newPartitions, 'validateOnly': validateOnly};
+  Map<String, dynamic> get asJson {
+    final newPartitionsJson = {};
+    newPartitions.forEach((key, value) {
+      newPartitionsJson[key] = value.asJson;
+    });
+    return {'newPartitions': newPartitionsJson, 'validateOnly': validateOnly};
   }
 
   static CreatePartitionRequest fromJson(Map<String, dynamic> json) {
