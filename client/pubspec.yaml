@@ -12,20 +12,14 @@ dependencies:
   flutter:
     sdk: flutter
 
-
   # see https://api.flutter.dev/flutter/dart-js/dart-js-library.html
   js: ^0.6.0
-
+  dropdown_search: ^0.4.4
   http: ^0.12.2
-
   provider: ^4.3.2+2
-
   collection: ^1.14.13
-
   file_picker: ^2.0.7
-
   toggle_switch: ^0.1.8
-
   font_awesome_flutter: ^8.10.0
 
 dev_dependencies:

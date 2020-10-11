@@ -14,9 +14,9 @@ class ListTopicsWidget extends StatefulWidget {
 }
 
 class _ListTopicsWidgetState extends State<ListTopicsWidget> {
-  List<String> topics = [];
   var dontPromptForDelete = false;
 
+  List<String> topics = [];
   @override
   void initState() {
     super.initState();

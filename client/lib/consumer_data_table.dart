@@ -115,7 +115,7 @@ class PeekDataWidget extends StatelessWidget {
     Scaffold.of(c).showSnackBar(
       SnackBar(
         content: Text(textToShow),
-        duration: const Duration(milliseconds: 2000),
+        duration: const Duration(milliseconds: 1000),
       ),
     );
   }

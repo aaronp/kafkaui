@@ -79,6 +79,18 @@ class RestClient {
     return range;
   }
 
+  static Future<Set<String>> repartition(CreatePartitionRequest request) async {
+    final url = '$HostPort/rest/kafka/repartition';
+    final jsonBody = request.asJson;
+    print('curl -XPOST -d ${jsonBody} $url');
+    http.Response response = await http.post(url, body: jsonBody);
+    assert(response.statusCode == 200,
+        'Blew up w/ status: ${response.statusCode}');
+    final Set<String> jsonResponse = decoder.convert(response.body);
+
+    return jsonResponse;
+  }
+
   static Future<Map<String, List<MetricEntry>>> metrics() async {
     final url = '$HostPort/rest/kafka/metrics';
     http.Response response = await http.get(url);

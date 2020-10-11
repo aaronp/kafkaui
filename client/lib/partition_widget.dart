@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:kafkaui/repartition_dialog.dart';
 import 'package:kafkaui/rest_client.dart';
 
 import 'model.dart';
@@ -45,8 +46,36 @@ class _PartitionsForTopicWidgetState extends State<PartitionsForTopicWidget> {
       final kids = topicDesc.partitions
           .map((e) => TopicPartitionInfoDescWidget(e))
           .toList();
-      return Wrap(spacing: 20, runSpacing: 20, children: kids);
+
+      String partitionTitle = '${kids.length} Partitions';
+      if (kids.length == 1) {
+        partitionTitle = 'One Partition';
+      }
+      return Card(
+          clipBehavior: Clip.antiAlias,
+          shadowColor: Colors.grey,
+          elevation: 4,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              ListTile(
+                leading: Icon(Icons.pie_chart),
+                title: Text(partitionTitle),
+              ),
+              ButtonBar(alignment: MainAxisAlignment.start, children: [
+                RaisedButton.icon(
+                    onPressed: () => onRepartition(context, kids.length),
+                    icon: Icon(Icons.edit),
+                    label: Text('Repartition'))
+              ]),
+              Wrap(spacing: 20, runSpacing: 20, children: kids),
+            ],
+          ));
     }
+  }
+
+  void onRepartition(BuildContext ctxt, int currentPartitions) {
+    RepartitionDialog.onRepartition(ctxt, widget.topic, currentPartitions);
   }
 }
 
@@ -57,29 +86,25 @@ class TopicPartitionInfoDescWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: 350.0,
-          maxHeight: 250.0,
+    return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Text('Partition ${info.partition}:'),
+      ),
+      Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Text(
+          'Leader: ${info?.leader?.id} at ${info?.leader?.host}:${info?.leader?.port}',
+          style: TextStyle(color: Colors.black.withOpacity(0.6)),
         ),
-        child: Card(
-            clipBehavior: Clip.antiAlias,
-            shadowColor: Colors.grey,
-            elevation: 10,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                ListTile(
-                  leading: Icon(Icons.pie_chart),
-                  title: Text('Partition ${info.partition}'),
-                  subtitle: Text(
-                    'Leader: ${info?.leader?.id} at ${info?.leader?.host}:${info?.leader?.port}',
-                    style: TextStyle(color: Colors.black.withOpacity(0.6)),
-                  ),
-                ),
-                Flexible(child: replicasList()),
-              ],
-            )));
+      ),
+      SingleChildScrollView(
+          child: Container(
+              width: 400,
+              height: 300,
+              alignment: Alignment.topLeft,
+              child: replicasList()))
+    ]);
   }
 
   ListView replicasList() {
@@ -89,7 +114,7 @@ class TopicPartitionInfoDescWidget extends StatelessWidget {
         padding: const EdgeInsets.all(8),
         itemBuilder: (ctxt, index) {
           return nodeWidget(
-              'Replica', info.replicas[index], index, Colors.blue);
+              'Replica', info.replicas[index], index, Colors.grey[100]);
         });
   }
 
