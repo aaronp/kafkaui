@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:kafkaui/list_topics_widget.dart';
 import 'package:kafkaui/rest_client.dart';
 
+import 'consumer_data_table.dart';
 import 'main.dart';
 import 'partition_widget.dart';
 
@@ -61,13 +62,10 @@ class _TopicWidgetState extends State<TopicWidget> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         topicDropDown(topic),
-        if (topic.isNotEmpty) partitionsSection(topic)
+        if (topic.isNotEmpty) PartitionsForTopicWidget(topic),
+        if (topic.isNotEmpty) PeekDataWidget.forTopic(topic)
       ],
     );
-  }
-
-  Widget partitionsSection(String topic) {
-    return PartitionsForTopicWidget(topic);
   }
 
   DropdownSearch<String> topicDropDown(String topic) {

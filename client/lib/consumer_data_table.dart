@@ -13,11 +13,8 @@ void main() => runApp(
             SafeArea(child: new Material(color: Colors.white, child: child)),
         home: Scaffold(
           // body: ConsumerDataWidget('topiceae5c8f8a3054d19a132cb3033031e49'),
-          body: ChangeNotifierProvider<RecordDataNotifier>(
-            create: (_) =>
-                RecordDataNotifier('topiceae5c8f8a3054d19a132cb3033031e49', {}),
-            child: PeekDataWidget(),
-          ),
+          body:
+              PeekDataWidget.forTopic('topiceae5c8f8a3054d19a132cb3033031e49'),
         ),
       ),
     );
@@ -104,11 +101,23 @@ class RecordDataTableSource extends DataTableSource {
 }
 
 class PeekDataWidget extends StatelessWidget {
-  DataColumn c(String label) {
+  static Widget forTopic(String topic) {
+    return ChangeNotifierProvider<RecordDataNotifier>(
+      create: (_) => RecordDataNotifier(topic, {}),
+      child: PeekDataWidget(),
+    );
+  }
+
+  DataColumn _textCol(String label) {
     return DataColumn(
       label: Text(label),
       tooltip: label,
     );
+  }
+
+  DataColumn _numCol(String label, DataColumnSortCallback sortBy) {
+    return DataColumn(
+        label: Text(label), numeric: true, tooltip: label, onSort: sortBy);
   }
 
   void _showSnackBar(BuildContext c, String textToShow) {
@@ -118,11 +127,6 @@ class PeekDataWidget extends StatelessWidget {
         duration: const Duration(milliseconds: 1000),
       ),
     );
-  }
-
-  DataColumn n(String label, DataColumnSortCallback sortBy) {
-    return DataColumn(
-        label: Text(label), numeric: true, tooltip: label, onSort: sortBy);
   }
 
   void _sort<T>(
@@ -155,20 +159,20 @@ class PeekDataWidget extends StatelessWidget {
     return CustomPaginatedTable(
         source: _src,
         dataColumns: [
-          c('Topic'),
-          n('Partition', (colIndex, asc) {
+          _textCol('Topic'),
+          _numCol('Partition', (colIndex, asc) {
             _sort<num>((r) => r.partition, colIndex, asc, _src, _provider);
           }),
-          n('Offset', (colIndex, asc) {
+          _numCol('Offset', (colIndex, asc) {
             _sort<num>((r) => r.offset, colIndex, asc, _src, _provider);
           }),
-          n('Timestamp', (colIndex, asc) {
+          _numCol('Timestamp', (colIndex, asc) {
             _sort<num>((r) => r.timestamp, colIndex, asc, _src, _provider);
           }),
-          c('TS Type'),
-          c('Value'),
-          c('Key Size'),
-          c('Value Size')
+          _textCol('TS Type'),
+          _textCol('Value'),
+          _textCol('Key Size'),
+          _textCol('Value Size')
         ],
         header: Text(_provider.topic),
         onRowChanged: (index) => _provider.rowsPerPage = index,
