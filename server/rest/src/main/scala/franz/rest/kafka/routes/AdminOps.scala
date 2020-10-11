@@ -45,6 +45,13 @@ final case class AdminOps(admin: RichKafkaAdmin, requestTimeout: FiniteDuration)
     } yield createResult.values.keySet().asScala.toSet
   }
 
+  def updatePartitions(request: AlterPartitionRequest): ZIO[Any, Throwable, Unit] = {
+    for {
+      createResult <- Task(admin.admin.alterPartitionReassignments(request.asJava))
+      _ <- createResult.all().asTask
+    } yield ()
+  }
+
   def deleteGroup(consumerGroups: Set[ConsumerGroupId]): Task[Set[ConsumerGroupId]] = {
     for {
       r <- Task(admin.admin.deleteConsumerGroups(consumerGroups.asJava))
@@ -86,7 +93,7 @@ final case class AdminOps(admin: RichKafkaAdmin, requestTimeout: FiniteDuration)
     }
   }
 
-  def listOffsetsForTopic(topic: Topic, offset : Offset): ZIO[Any, Throwable, Seq[ListOffsetsEntry]] = {
+  def listOffsetsForTopic(topic: Topic, offset: Offset): ZIO[Any, Throwable, Seq[ListOffsetsEntry]] = {
     def asRequest(topicDesc: Map[Topic, TopicDesc]): ListOffsetsRequest = {
       val positions = for {
         (topic, desc) <- topicDesc

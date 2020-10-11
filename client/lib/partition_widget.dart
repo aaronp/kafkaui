@@ -33,9 +33,7 @@ class _PartitionsForTopicWidgetState extends State<PartitionsForTopicWidget> {
   @override
   void initState() {
     super.initState();
-    RestClient.partitionsForTopic(widget.topic).then((value) => setState(() {
-          topicDesc = value;
-        }));
+    fetchData();
   }
 
   @override
@@ -43,39 +41,55 @@ class _PartitionsForTopicWidgetState extends State<PartitionsForTopicWidget> {
     if (topicDesc == null || topicDesc.partitions == null) {
       return Center(child: CircularProgressIndicator());
     } else {
-      final kids = topicDesc.partitions
-          .map((e) => TopicPartitionInfoDescWidget(e))
-          .toList();
-
-      String partitionTitle = '${kids.length} Partitions';
-      if (kids.length == 1) {
-        partitionTitle = 'One Partition';
+      if (topicDesc.name != widget.topic) {
+        fetchData();
+        return Center(child: CircularProgressIndicator());
+      } else {
+        return makeCard(context);
       }
-      return Card(
-          clipBehavior: Clip.antiAlias,
-          shadowColor: Colors.grey,
-          elevation: 4,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              ListTile(
-                leading: Icon(Icons.pie_chart),
-                title: Text(partitionTitle),
-              ),
-              ButtonBar(alignment: MainAxisAlignment.start, children: [
-                RaisedButton.icon(
-                    onPressed: () => onRepartition(context, kids.length),
-                    icon: Icon(Icons.edit),
-                    label: Text('Repartition'))
-              ]),
-              Wrap(spacing: 20, runSpacing: 20, children: kids),
-            ],
-          ));
     }
+  }
+
+  Card makeCard(BuildContext context) {
+    print(widget.topic);
+    final kids = topicDesc.partitions
+        .map((e) => TopicPartitionInfoDescWidget(e))
+        .toList();
+
+    String partitionTitle = '${widget.topic} has ${kids.length} Partitions';
+    if (kids.length == 1) {
+      partitionTitle = 'One Partition';
+    }
+    return Card(
+        clipBehavior: Clip.antiAlias,
+        shadowColor: Colors.grey,
+        elevation: 4,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            ListTile(
+              leading: Icon(Icons.pie_chart),
+              title: Text(partitionTitle),
+            ),
+            ButtonBar(alignment: MainAxisAlignment.start, children: [
+              RaisedButton.icon(
+                  onPressed: () => onRepartition(context, kids.length),
+                  icon: Icon(Icons.edit),
+                  label: Text('Repartition'))
+            ]),
+            Wrap(spacing: 20, runSpacing: 20, children: kids),
+          ],
+        ));
   }
 
   void onRepartition(BuildContext ctxt, int currentPartitions) {
     RepartitionDialog.onRepartition(ctxt, widget.topic, currentPartitions);
+  }
+
+  void fetchData() {
+    RestClient.partitionsForTopic(widget.topic).then((value) => setState(() {
+          topicDesc = value;
+        }));
   }
 }
 

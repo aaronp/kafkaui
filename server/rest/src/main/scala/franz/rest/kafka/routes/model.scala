@@ -2,7 +2,7 @@ package franz.rest.kafka.routes
 
 import java.time.{ZoneId, ZonedDateTime}
 import java.time.format.DateTimeFormatter
-import java.util.Base64
+import java.util.{Base64, Optional}
 
 import franz.rest.kafka.routes.MetricEntry.FmtSuffixes
 import io.circe.Decoder.Result
@@ -232,6 +232,31 @@ object CreatePartitionRequest {
   implicit val codec = io.circe.generic.semiauto.deriveCodec[CreatePartitionRequest]
 }
 
+final case class AlterPartitionRequest(targetReplicasByPartition: Seq[(TopicKey, Option[List[Int]])]) {
+  def asJava = {
+    val jMap = new java.util.HashMap[TopicPartition, Optional[NewPartitionReassignment]]()
+    targetReplicasByPartition.foreach {
+      case (key, Some(targetReplicas)) =>
+        val replicas = Optional.of(new NewPartitionReassignment(targetReplicas.map(Integer.valueOf).asJava))
+        jMap.put(key.asJava, replicas)
+      case (key, None) => jMap.put(key.asJava, Optional.empty())
+    }
+    jMap
+  }
+}
+
+object AlterPartitionRequest {
+  def apply(entries: (TopicKey, List[Int])*): AlterPartitionRequest = {
+    val map: Seq[(TopicKey, Option[List[Partition]])] = entries.map {
+      case (k, Nil) => (k, None)
+      case (k, list) => (k, Some(list))
+    }
+    new AlterPartitionRequest(map)
+  }
+
+  implicit val codec = io.circe.generic.semiauto.deriveCodec[AlterPartitionRequest]
+}
+
 case class ConsumerGroupMember(consumerId: String,
                                groupInstanceId: Option[String],
                                clientId: String,
@@ -301,7 +326,8 @@ object Offset {
   def latest = Latest
 
   def earliest = Earliest
-  def at(time : Long) = Timestamp(time)
+
+  def at(time: Long) = Timestamp(time)
 
   implicit object codec extends Codec[Offset] {
     override def apply(c: HCursor): Result[Offset] = {
