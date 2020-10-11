@@ -10,9 +10,8 @@ void main() => runApp(
         builder: (context, child) =>
             SafeArea(child: new Material(color: Colors.white, child: child)),
         home: Scaffold(
-          // body: ConsumerDataWidget('topiceae5c8f8a3054d19a132cb3033031e49'),
-          body:
-              PartitionsForTopicWidget('topiceae5c8f8a3054d19a132cb3033031e49'),
+          body: PartitionsForTopicWidget(
+              'twotopic802a6a186fed4ffd83d65ca5abff067e'),
         ),
       ),
     );
@@ -45,18 +44,19 @@ class _PartitionsForTopicWidgetState extends State<PartitionsForTopicWidget> {
         fetchData();
         return Center(child: CircularProgressIndicator());
       } else {
-        return makeCard(context);
+        return Container(
+            decoration: BoxDecoration(border: Border.all(color: Colors.blue)),
+            child: makeCard(context));
       }
     }
   }
 
-  Card makeCard(BuildContext context) {
-    print(widget.topic);
+  Widget makeCard(BuildContext context) {
     final kids = topicDesc.partitions
         .map((e) => TopicPartitionInfoDescWidget(e))
         .toList();
 
-    String partitionTitle = '${widget.topic} has ${kids.length} Partitions';
+    String partitionTitle = '${kids.length} Partitions';
     if (kids.length == 1) {
       partitionTitle = 'One Partition';
     }
@@ -65,19 +65,20 @@ class _PartitionsForTopicWidgetState extends State<PartitionsForTopicWidget> {
         shadowColor: Colors.grey,
         elevation: 4,
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
           children: [
             ListTile(
               leading: Icon(Icons.pie_chart),
               title: Text(partitionTitle),
             ),
-            ButtonBar(alignment: MainAxisAlignment.start, children: [
-              RaisedButton.icon(
-                  onPressed: () => onRepartition(context, kids.length),
-                  icon: Icon(Icons.edit),
-                  label: Text('Repartition'))
-            ]),
-            Wrap(spacing: 20, runSpacing: 20, children: kids),
+            ExpansionTile(
+              title: ButtonBar(alignment: MainAxisAlignment.start, children: [
+                RaisedButton.icon(
+                    onPressed: () => onRepartition(context, kids.length),
+                    icon: Icon(Icons.edit),
+                    label: Text('Repartition'))
+              ]),
+              children: [Wrap(spacing: 20, runSpacing: 20, children: kids)],
+            ),
           ],
         ));
   }
@@ -100,6 +101,10 @@ class TopicPartitionInfoDescWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    String leaderCoords = 'not set';
+    if (info != null && info.leader != null) {
+      leaderCoords = 'at ${info.leader.host}:${info.leader.port}';
+    }
     return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Padding(
         padding: const EdgeInsets.all(8.0),
@@ -108,20 +113,22 @@ class TopicPartitionInfoDescWidget extends StatelessWidget {
       Padding(
         padding: const EdgeInsets.all(8.0),
         child: Text(
-          'Leader: ${info?.leader?.id} at ${info?.leader?.host}:${info?.leader?.port}',
+          'Leader: ${info?.leader?.id} $leaderCoords',
           style: TextStyle(color: Colors.black.withOpacity(0.6)),
         ),
       ),
-      SingleChildScrollView(
-          child: Container(
-              width: 400,
-              height: 300,
-              alignment: Alignment.topLeft,
-              child: replicasList()))
+      LimitedBox(
+        maxWidth: 400,
+        maxHeight: 500,
+        child: SingleChildScrollView(
+            child: Container(
+                // decoration: BoxDecoration(border: Border.all(color: Colors.red)),
+                child: replicasList())),
+      )
     ]);
   }
 
-  ListView replicasList() {
+  Widget replicasList() {
     return ListView.builder(
         itemCount: info.replicas.length,
         shrinkWrap: true,
@@ -147,13 +154,16 @@ class TopicPartitionInfoDescWidget extends StatelessWidget {
     if (isr.rack != null) {
       rack = ' on rack "${isr.rack}"';
     }
+    var location = '';
+    if (isr.port >= 0) {
+      location = 'on ${isr.host}:${isr.port}';
+    }
     return Container(
         height: 40,
         color: color,
         child: Padding(
           padding: const EdgeInsets.all(8.0),
-          child: Text(
-              '$label #${index + 1} [id:${isr.id}] on ${isr.host}:${isr.port}$rack',
+          child: Text('$label #${index + 1} [id:${isr.id}] $location$rack',
               style: TextStyle(color: Colors.black.withOpacity(0.6))),
         ));
   }
