@@ -5,6 +5,7 @@ import 'package:kafkaui/rest_client.dart';
 
 import 'consumer_data_table.dart';
 import 'partition_widget.dart';
+import 'push_data_dialog.dart';
 
 void main() => runApp(
       MaterialApp(
@@ -57,7 +58,7 @@ class _TopicWidgetState extends State<TopicWidget> {
           if (selectedTopic.isNotEmpty) IconButton(
               icon: const Icon(Icons.library_add_rounded),
               tooltip: 'Push Data',
-              onPressed: null),
+              onPressed: () => PushDataDialog.show(context, selectedTopic)),
           IconButton(
               icon: const Icon(Icons.add_circle),
               tooltip: 'Create Topic',
@@ -101,4 +102,5 @@ class _TopicWidgetState extends State<TopicWidget> {
         selectedItem: selectedTopic,
         maxHeight: 450);
   }
+
 }
