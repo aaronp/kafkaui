@@ -1,24 +1,44 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-import 'package:kafkaui/rest_client.dart';
 
+import 'create_topic_dialog.dart';
 import 'list_topics_widget.dart';
-import 'topic_widget.dart';
+import 'navigation_drawer.dart';
 
 class TopicsWidget extends StatefulWidget {
+  static const path = '/list-topics';
+
   @override
   _TopicsWidgetState createState() => _TopicsWidgetState();
 }
 
 class _TopicsWidgetState extends State<TopicsWidget> {
-  String selectedWidget = '';
+  final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
+  Key _listTopicsKey = ValueKey('xyz');
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        ListTopicsWidget(),
-      ],
+    return Scaffold(
+      key: _scaffoldKey,
+      appBar: AppBar(
+        title: Text('Kafka'),
+        actions: [
+          CreateTopicDialog.createButton(context, _scaffoldKey),
+          IconButton(
+              icon: const Icon(Icons.refresh),
+              tooltip: 'Refresh',
+              onPressed: () => setState(() {
+                    _listTopicsKey =
+                        ValueKey('${DateTime.now().millisecondsSinceEpoch}');
+                  }))
+        ],
+      ),
+      drawer: NavigationDrawer(),
+      body: Row(
+        children: [
+          ListTopicsWidget(key: _listTopicsKey),
+        ],
+      ),
     );
   }
 }

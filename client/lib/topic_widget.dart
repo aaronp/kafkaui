@@ -3,19 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:kafkaui/rest_client.dart';
 
-import 'consumer_data_table.dart';
+import 'create_topic_dialog.dart';
+import 'navigation_drawer.dart';
 import 'partition_widget.dart';
 import 'push_data_dialog.dart';
 
 void main() => runApp(
       MaterialApp(
-        builder: (context, child) =>
-            SafeArea(child: new Material(color: Colors.white, child: child)),
-        home: Scaffold(
-          // body: ConsumerDataWidget('topiceae5c8f8a3054d19a132cb3033031e49'),
-          body: TopicWidget(),
-        ),
-      ),
+          builder: (context, child) =>
+              SafeArea(child: new Material(color: Colors.white, child: child)),
+          home: TopicWidget()),
     );
 
 class TopicWidget extends StatefulWidget {
@@ -28,6 +25,9 @@ class TopicWidget extends StatefulWidget {
 }
 
 class _TopicWidgetState extends State<TopicWidget> {
+
+  final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
+
   List<String> topics = [];
   String selectedTopic = '';
 
@@ -46,25 +46,27 @@ class _TopicWidgetState extends State<TopicWidget> {
     }
 
     return Scaffold(
+      key: _scaffoldKey,
       appBar: AppBar(
-        //title: selectedTopic.isEmpty ? Text('Create or Choose a Kafka Topic') : Text('Topic $selectedTopic'),
-        primary: false,
-        backgroundColor: Theme.of(context).secondaryHeaderColor,
+        // title: Text('Kafka'),
+        title: selectedTopic.isEmpty
+            ? Text('Create or Choose a Kafka Topic')
+            : Text('Topic $selectedTopic'),
         actions: [
-          if (selectedTopic.isNotEmpty) IconButton(
-              icon: const Icon(Icons.edit),
-              tooltip: 'Reparition',
-              onPressed: null),
-          if (selectedTopic.isNotEmpty) IconButton(
-              icon: const Icon(Icons.library_add_rounded),
-              tooltip: 'Push Data',
-              onPressed: () => PushDataDialog.show(context, selectedTopic)),
-          IconButton(
-              icon: const Icon(Icons.add_circle),
-              tooltip: 'Create Topic',
-              onPressed: null)
+          if (selectedTopic.isNotEmpty)
+            IconButton(
+                icon: const Icon(Icons.edit),
+                tooltip: 'Reparition',
+                onPressed: null),
+          if (selectedTopic.isNotEmpty)
+            IconButton(
+                icon: const Icon(Icons.library_add_rounded),
+                tooltip: 'Push Data',
+                onPressed: () => PushDataDialog.show(context, _scaffoldKey, selectedTopic)),
+          CreateTopicDialog.createButton(context, _scaffoldKey)
         ],
       ),
+      drawer: NavigationDrawer(),
       body: Padding(
           padding: const EdgeInsets.all(8.0),
           child: topicWidget(
@@ -73,14 +75,17 @@ class _TopicWidgetState extends State<TopicWidget> {
   }
 
   Widget topicWidget(String topic) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        topicDropDown(topic),
-        if (topic.isNotEmpty) PartitionsForTopicWidget(topic),
-        if (topic.isNotEmpty) PeekDataWidget.forTopic(topic)
-      ],
-    );
+    return LimitedBox(
+        maxWidth: 1000,
+        maxHeight: 1000,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            topicDropDown(topic),
+            if (topic.isNotEmpty) PartitionsForTopicWidget(topic),
+            // if (topic.isNotEmpty) PeekDataWidget.forTopic(topic)
+          ],
+        ));
   }
 
   DropdownSearch<String> topicDropDown(String topic) {
@@ -102,5 +107,4 @@ class _TopicWidgetState extends State<TopicWidget> {
         selectedItem: selectedTopic,
         maxHeight: 450);
   }
-
 }

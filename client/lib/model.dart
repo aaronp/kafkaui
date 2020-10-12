@@ -388,3 +388,30 @@ class OffsetRange {
         OffsetInfo.fromJson(json['latest']));
   }
 }
+
+class CreateTopic {
+  CreateTopic(
+      this.name,
+      this.numPartitions,
+      this.replicationFactor
+      );
+
+  String name;
+  int numPartitions;
+  int replicationFactor;
+
+  Map<String, Object> get asJson {
+    return {
+      'name': name,
+      'numPartitions': numPartitions,
+      'replicationFactor': replicationFactor
+    };
+  }
+
+  static CreateTopic fromJson(Map<String, dynamic> json) {
+    return CreateTopic(
+        json['name'],
+        json['numPartitions'],
+        json['replicationFactor']);
+  }
+}

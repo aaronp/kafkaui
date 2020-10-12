@@ -7,7 +7,6 @@ import 'package:flutter/widgets.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import 'model.dart';
-import 'rest_client.dart';
 
 void main() => runApp(
       MaterialApp(
@@ -15,13 +14,20 @@ void main() => runApp(
             SafeArea(child: new Material(color: Colors.white, child: child)),
         home: Scaffold(
           // body: ConsumerDataWidget('topiceae5c8f8a3054d19a132cb3033031e49'),
-          body: PushDataWidget('topiceae5c8f8a3054d19a132cb3033031e49'),
+          body: PushDataWidget(
+              'topiceae5c8f8a3054d19a132cb3033031e49', (r) => {}),
         ),
       ),
     );
 
+typedef GetPublishOneRequest = PublishOne Function();
+typedef GetPublishOneRequestCallback = void Function(
+    GetPublishOneRequest callback);
+
 class PushDataWidget extends StatefulWidget {
-  PushDataWidget(this.topic);
+  PushDataWidget(this.topic, this.setCallback);
+
+  GetPublishOneRequestCallback setCallback;
 
   final String topic;
 
@@ -47,43 +53,43 @@ class _PushDataWidgetState extends State<PushDataWidget> {
   void initState() {
     super.initState();
     _valueWidget = defaultValueWidget();
+    widget.setCallback(() => request);
+  }
+
+  PublishOne get request {
+    if (_formKey.currentState.validate()) {
+      final isBase64 = _uploadFile != null;
+
+      var data = _valueBodyController.text;
+      if (_uploadFile != null) {
+        data = base64Encode(_uploadFile.bytes);
+      }
+      return PublishOne(widget.topic, _keyController.text, data,
+          int.tryParse(_partitionController.text) ?? null, isBase64);
+    } else {
+      return null;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return scrollableContent(Card(
-        clipBehavior: Clip.antiAlias,
-        elevation: 10,
-        child: Column(
-          children: [
-            ListTile(
-              leading: Icon(Icons.arrow_drop_down_circle),
-              title: Text(widget.topic),
-              subtitle: Text(
-                'Use this form to push data to the topic',
-                style: TextStyle(color: Colors.black.withOpacity(0.6)),
-              ),
-            ),
-            Form(
-                key: _formKey,
-                child: Padding(
+    return scrollableContent(Form(
+        key: _formKey,
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Padding(
                   padding: const EdgeInsets.all(8.0),
-                  child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: partitionField(),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: keyField(),
-                        ),
-                        _valueWidget,
-                        submitFormButton(context)
-                      ]),
-                )),
-          ],
+                  child: partitionField(),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: keyField(),
+                ),
+                _valueWidget
+              ]),
         )));
   }
 
@@ -95,21 +101,6 @@ class _PushDataWidgetState extends State<PushDataWidget> {
       ),
       filePickerWidget()
     ]);
-  }
-
-  Widget submitFormButton(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(56.0, 0, 0, 0),
-      child: RaisedButton(
-        onPressed: () {
-          // Validate returns true if the form is valid, otherwise false.
-          if (_formKey.currentState.validate()) {
-            onPush();
-          }
-        },
-        child: Text('Push Record'),
-      ),
-    );
   }
 
   Widget partitionField() {
@@ -223,6 +214,7 @@ class _PushDataWidgetState extends State<PushDataWidget> {
 
   Widget keyField() {
     return TextFormField(
+        autofocus: true,
         controller: _keyController,
         decoration: InputDecoration(
           labelText: 'Record Key',
@@ -242,7 +234,7 @@ class _PushDataWidgetState extends State<PushDataWidget> {
         });
   }
 
-  pickFile() async {
+  void pickFile() async {
     FilePickerResult result =
         await FilePicker.platform.pickFiles(allowMultiple: false);
 
@@ -305,20 +297,5 @@ class _PushDataWidgetState extends State<PushDataWidget> {
     _uploadFile = null;
     _uploadFileName = null;
     _valueWidget = defaultValueWidget();
-  }
-
-  void onPush() async {
-    final isBase64 = _uploadFile != null;
-
-    var data = _valueBodyController.text;
-    if (_uploadFile != null) {
-      data = base64Encode(_uploadFile.bytes);
-    }
-    final request = PublishOne(widget.topic, _keyController.text, data,
-        int.tryParse(_partitionController.text) ?? null, isBase64);
-
-    final response = await RestClient.push(request);
-    Scaffold.of(context).showSnackBar(SnackBar(
-        content: Text('Pushed ${request.key}: ${response.asJson}')));
   }
 }

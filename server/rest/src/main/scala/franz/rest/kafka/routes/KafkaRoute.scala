@@ -1,17 +1,13 @@
 package franz.rest.kafka.routes
 
-import java.time.ZonedDateTime
 import java.util.Base64
 
 import franz.rest.kafka.routes.AdminOps.CreateTopic
 import franz.rest.{EnvRuntime, taskDsl}
-import io.circe.Json
 import org.http4s.circe.CirceEntityCodec._
 import org.http4s.{DecodeResult, EntityDecoder, HttpRoutes}
 import zio.Task
 import zio.interop.catz._
-
-import scala.util.Try
 
 object KafkaRoute {
 
@@ -127,7 +123,7 @@ object KafkaRoute {
    */
   def deleteTopic(delete: Set[String] => Task[Set[String]])(implicit runtime: EnvRuntime): HttpRoutes[Task] = {
     HttpRoutes.of[Task] {
-      case req@DELETE -> Root / "kafka" / "topic" / topic => for {
+      case DELETE -> Root / "kafka" / "topic" / topic => for {
         done <- delete(Set(topic))
         result <- Ok(done)
       } yield result

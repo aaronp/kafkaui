@@ -3,13 +3,13 @@ package franz.rest.kafka.routes
 import java.util.concurrent.TimeoutException
 
 import cats.implicits._
-import com.typesafe.config.Config
+import com.typesafe.config.{Config, ConfigFactory}
 import franz.rest.EnvRuntime
 import org.http4s.HttpRoutes
 import zio.interop.catz._
 import zio.{Has, Task, ZIO}
 
-case class KafkaApp(config: Config) {
+final case class KafkaApp(config: Config = ConfigFactory.load()) {
 
   def routes(implicit runtime: EnvRuntime): ZIO[ProducerOps, Throwable, HttpRoutes[Task]] = {
 

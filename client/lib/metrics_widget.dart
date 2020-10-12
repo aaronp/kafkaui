@@ -16,6 +16,7 @@ void main() => runApp(
     );
 
 class MetricsWidget extends StatefulWidget {
+  static const path = '/metrics';
   @override
   _MetricsWidgetState createState() => _MetricsWidgetState();
 }

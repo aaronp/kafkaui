@@ -39,7 +39,8 @@ object MainZIO extends CatsApp with StrictLogging {
     val logHeaders = config.getBoolean("franz.www.logHeaders")
     val logBody = config.getBoolean("franz.www.logBody")
 
-    def mkRouter(restRoutes : HttpRoutes[Task]) = {
+
+    def mkRouter(restRoutes: HttpRoutes[Task]) = {
       val httpApp = org.http4s.server.Router[Task](
         "/rest" -> restRoutes,
         "/" -> StaticFileRoutes(config).routes[Task]()

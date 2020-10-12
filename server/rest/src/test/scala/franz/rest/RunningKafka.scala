@@ -42,10 +42,10 @@ trait RunningKafka extends BeforeAndAfterAll {
          |# took ${time.toMillis}ms to get the IP address
          |franz.kafka.ip="${ipAddress}:9095" """.stripMargin
 
-    val updated = Paths.get(bootstrapservers.toURI).text = newConf
+//    val updated = Paths.get(bootstrapservers.toURI).text = newConf
 
 
-    println(s"Updated $updated to:\n${newConf}")
+//    println(s"Updated $updated to:\n${newConf}")
   }
 
   override def afterAll(): Unit = {

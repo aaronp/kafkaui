@@ -10,6 +10,8 @@ Use AppClient against a route
 # Kafka
 
 see [kafka-docker](https://github.com/wurstmeister/kafka-docker)
+https://github.com/rmoff/kafka-listeners/blob/master/docker-compose.yml
+https://github.com/confluentinc/examples 
 
 ## Bring up Kafka
 
@@ -17,3 +19,5 @@ see [kafka-docker](https://github.com/wurstmeister/kafka-docker)
 docker-compose up -d
 docker-compose scale kafka=3
 ```
+
+

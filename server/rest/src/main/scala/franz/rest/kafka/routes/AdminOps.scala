@@ -26,7 +26,7 @@ import scala.concurrent.duration.FiniteDuration
 import scala.jdk.CollectionConverters._
 import scala.util.Try
 
-final case class AdminOps(admin: RichKafkaAdmin, requestTimeout: FiniteDuration)(implicit rt : zio.Runtime[ZEnv]) extends AutoCloseable with StrictLogging {
+final case class AdminOps(admin: RichKafkaAdmin, requestTimeout: FiniteDuration)(implicit rt: zio.Runtime[ZEnv]) extends AutoCloseable with StrictLogging {
 
   def requestDurationJava = java.time.Duration.ofMillis(requestTimeout.toMillis)
 
@@ -37,9 +37,9 @@ final case class AdminOps(admin: RichKafkaAdmin, requestTimeout: FiniteDuration)
   private implicit def richFuture[A](future: KafkaFuture[A]) = new {
     def asTask = {
       val blocked: ZIO[Blocking, Throwable, A] = zio.blocking.blocking {
-//        ZIO.fromFuture(_ => Future(future.get(requestTimeout.toMillis, TimeUnit.MILLISECONDS)))
+        //        ZIO.fromFuture(_ => Future(future.get(requestTimeout.toMillis, TimeUnit.MILLISECONDS)))
         Task.effectAsync[A] { cb =>
-          future.whenComplete(new BiConsumer[A, Throwable]{
+          future.whenComplete(new BiConsumer[A, Throwable] {
             override def accept(result: A, err: Throwable): Unit = {
               println(s"task complete w/ $result or $err")
               if (result == null) {
@@ -182,11 +182,18 @@ final case class AdminOps(admin: RichKafkaAdmin, requestTimeout: FiniteDuration)
   }
 
   def deleteTopics(topics: Set[String]): Task[Set[ConsumerGroupId]] = {
+    def block(result: Either[Throwable, DeleteTopicsResult]) = {
+      Task.fromEither(result).flatMap(_.all().asTask).either
+    }
+
     for {
-      result <- Task(admin.admin.deleteTopics(topics.asJava))
-      _ <- result.all().asTask
+      result <- Task(admin.admin.deleteTopics(topics.asJava)).either
+      _ <- block(result)
     } yield {
-      result.values().keySet().asScala.toSet
+      result match {
+        case Left(_) => Set.empty
+        case Right(ids) => ids.values().keySet().asScala.toSet
+      }
     }
   }
 
@@ -252,7 +259,7 @@ object AdminOps {
     implicit val codec = io.circe.generic.semiauto.deriveCodec[CreateTopic]
   }
 
-  def apply(rootConfig: Config = ConfigFactory.load())(implicit rt : zio.Runtime[ZEnv]): AdminOps = {
+  def apply(rootConfig: Config = ConfigFactory.load())(implicit rt: zio.Runtime[ZEnv]): AdminOps = {
 
     import args4c.implicits._
     val kafkaCfg = rootConfig.getConfig("franz.kafka.admin")

@@ -1,64 +1,64 @@
-version: '3.2'
+---
+version: '2'
 services:
   zookeeper:
-    image: wurstmeister/zookeeper
-    ports:
-      - "2181:2181"
+    image: "confluentinc/cp-zookeeper:5.4.3"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  #
+  # see https://raw.githubusercontent.com/rmoff/kafka-listeners/master/docker-compose.yml
   kafka0:
-    image: wurstmeister/kafka:latest
+    image: "confluentinc/cp-enterprise-kafka:5.4.3"
     ports:
-      - target: 9094
-        published: 9094
-        protocol: tcp
-        mode: host
+      - '9094:9094'
     depends_on:
       - zookeeper
     environment:
-      HOSTNAME_COMMAND: "<HOSTNAME_COMMAND_PLACEHOLDER>"
+      KAFKA_BROKER_ID: 0
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: INSIDE://:9092,OUTSIDE://_{HOSTNAME_COMMAND}:9094
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://:9092,OUTSIDE://localhost:9094
       KAFKA_LISTENERS: INSIDE://:9092,OUTSIDE://:9094
       KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 100
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+
   kafka1:
-    image: wurstmeister/kafka:latest
+    image: "confluentinc/cp-enterprise-kafka:5.4.3"
     ports:
-      - target: 9095
-        published: 9095
-        protocol: tcp
-        mode: host
+      - '9095:9095'
     depends_on:
       - zookeeper
-      - kafka0
     environment:
-      HOSTNAME_COMMAND: "<HOSTNAME_COMMAND_PLACEHOLDER>"
+      KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: INSIDE://:9092,OUTSIDE://_{HOSTNAME_COMMAND}:9095
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://:9092,OUTSIDE://localhost:9095
       KAFKA_LISTENERS: INSIDE://:9092,OUTSIDE://:9095
       KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 100
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+
   kafka2:
-    image: wurstmeister/kafka:latest
+    image: "confluentinc/cp-enterprise-kafka:5.4.3"
     ports:
-      - target: 9096
-        published: 9096
-        protocol: tcp
-        mode: host
+      - '9096:9096'
     depends_on:
       - zookeeper
-      - kafka0
-      - kafka1
     environment:
-      HOSTNAME_COMMAND2: "docker info | grep ^Name: | cut -d' ' -f 2"
-      HOSTNAME_COMMAND: "<HOSTNAME_COMMAND_PLACEHOLDER>"
+      KAFKA_BROKER_ID: 2
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: INSIDE://:9092,OUTSIDE://_{HOSTNAME_COMMAND}:9096
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://:9092,OUTSIDE://localhost:9096
       KAFKA_LISTENERS: INSIDE://:9092,OUTSIDE://:9096
       KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 100
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock

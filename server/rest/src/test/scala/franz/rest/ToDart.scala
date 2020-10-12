@@ -10,8 +10,7 @@ object ToDart {
   def main(a: Array[String]) = {
 
     Seq(
-      "case class OffsetInfo(offset: Long, timestamp: Long, leaderEpoch: Option[Long])",
-      """class OffsetRange(topic: String, partition: Int, earliest: OffsetInfo, latest: OffsetInfo)""".stripMargin
+      "case class CreateTopic(name: Topic, numPartitions: Int = 1, replicationFactor: Int)".stripMargin
 
     ).map(asDart).foreach(println)
   }
@@ -36,7 +35,7 @@ object ToDart {
     case LstR(t) => s"List<${typAsDart(t)}>"
     case SetR(t) => s"Set<${typAsDart(t)}>"
     case MapR(k, v) => s"Map<${typAsDart(k)}, ${typAsDart(v)}>"
-    case "Int" | "Long" => "int"
+    case "Int" | "Long" | "Short" => "int"
     case "Boolean" => "bool"
     case other => other
   }

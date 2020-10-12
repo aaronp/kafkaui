@@ -53,6 +53,10 @@ final case class PublishOne(topic: String, key: String, value: String, partition
 
 object PublishOne {
   implicit val codec = io.circe.generic.semiauto.deriveCodec[PublishOne]
+
+  def apply(topic: String, key: String, value: Array[Byte], partition: Option[Int]): PublishOne = {
+    new PublishOne(topic, key, Base64.getEncoder.encodeToString(value), partition, isBase64 = true)
+  }
 }
 
 case class RecordMetadataResponse(topicPartition: TopicKey,
@@ -444,6 +448,10 @@ final case class PeekRequest(topics: Set[String], fromOffset: Long, limit: Long,
 
 object PeekRequest {
   implicit val codec = io.circe.generic.semiauto.deriveCodec[PeekRequest]
+
+  def apply(topic :String, fromOffset: Long, limit: Long, partitions: Set[Int]): PeekRequest = {
+    new PeekRequest(Set(topic), fromOffset, limit, partitions)
+  }
 }
 
 case class Record(topic: String,

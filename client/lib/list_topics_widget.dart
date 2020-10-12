@@ -17,6 +17,7 @@ class _ListTopicsWidgetState extends State<ListTopicsWidget> {
   var dontPromptForDelete = false;
 
   List<String> topics = [];
+
   @override
   void initState() {
     super.initState();
@@ -27,26 +28,29 @@ class _ListTopicsWidgetState extends State<ListTopicsWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return CustomScrollView(
-      slivers: <Widget>[
-        SliverList(
-          // Use a delegate to build items as they're scrolled on screen.
-          delegate: SliverChildBuilderDelegate(
-            // The builder function returns a ListTile with a title that
-            // displays the index of the current item.
-            (context, index) => ListTile(
-                leading: IconButton(
-                    onPressed: () => _deleteTopic(context, topics[index]),
-                    color: Colors.red[900],
-                    icon: Icon(Icons.remove_circle)),
-                title: InkWell(child: Text(topics[index])),
-                onTap: () => _onTopic(context, topics[index])),
-            // Builds 1000 ListTiles
-            childCount: topics.length,
-          ),
-        ),
-      ],
-    );
+    return LimitedBox(
+        maxHeight: 100,
+        maxWidth: 1000,
+        child: CustomScrollView(
+          slivers: <Widget>[
+            SliverList(
+              // Use a delegate to build items as they're scrolled on screen.
+              delegate: SliverChildBuilderDelegate(
+                // The builder function returns a ListTile with a title that
+                // displays the index of the current item.
+                (context, index) => ListTile(
+                    leading: IconButton(
+                        onPressed: () => _deleteTopic(context, topics[index]),
+                        color: Colors.red[900],
+                        icon: Icon(Icons.remove_circle)),
+                    title: InkWell(child: Text(topics[index])),
+                    onTap: () => _onTopic(context, topics[index])),
+                // Builds 1000 ListTiles
+                childCount: topics.length,
+              ),
+            ),
+          ],
+        ));
   }
 
   Future<void> _doDelete(String topic, bool dontPrompt) {
@@ -79,8 +83,16 @@ class _ListTopicsWidgetState extends State<ListTopicsWidget> {
               color: Colors.red,
               label: Text("Delete"),
               onPressed: () {
-                _doDelete(topic, dontPrompt)
-                    .then((value) => Navigator.of(context).pop());
+                _doDelete(topic, dontPrompt).then(
+                    (value) => Navigator.pop(ctxt),
+                    onError: (err) => {
+                          Scaffold.of(ctxt).showSnackBar(
+                            SnackBar(
+                              content: Text("Error deleting '$topic': ${err}"),
+                              duration: const Duration(milliseconds: 3000),
+                            ),
+                          )
+                        });
               },
             );
 
@@ -94,32 +106,32 @@ class _ListTopicsWidgetState extends State<ListTopicsWidget> {
 
             return AlertDialog(
               title: Text("Confirm Delete"),
-              content: Flexible(
-                  child: Column(children: [
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Text("Do you really want to delete topic '$topic'?"),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: CheckboxListTile(
-                    title: Text("Don't ask me again"),
-                    value: dontPrompt,
-                    onChanged: (newValue) {
-                      setState(() {
-                        dontPrompt = !dontPrompt;
-                      });
-                    },
-                    controlAffinity: ListTileControlAffinity
-                        .leading, //  <-- leading Checkbox
-                  ),
-                )
-              ])),
-              actions: <Widget>[
-                cancelButton,
-                Expanded(child: Container()),
-                okButton
-              ],
+              content: Container(
+                  width: 500,
+                  height: 140,
+                  child: Flexible(
+                      fit: FlexFit.tight,
+                      flex: 1,
+                      child: Column(children: [
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(
+                              "Do you really want to delete topic '$topic'?"),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: CheckboxListTile(
+                              title: Text("Don't ask me again"),
+                              value: dontPrompt,
+                              onChanged: (newValue) {
+                                setState(() {
+                                  dontPrompt = !dontPrompt;
+                                });
+                              },
+                              controlAffinity: ListTileControlAffinity.leading),
+                        )
+                      ]))),
+              actions: <Widget>[cancelButton, okButton],
             );
           },
         );
@@ -128,6 +140,6 @@ class _ListTopicsWidgetState extends State<ListTopicsWidget> {
   }
 
   _onTopic(BuildContext context, String topic) {
-    Navigator.pushNamed(context, TopicWidget.path, arguments:topic);
+    Navigator.pushNamed(context, TopicWidget.path, arguments: topic);
   }
 }
