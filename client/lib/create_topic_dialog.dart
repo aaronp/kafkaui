@@ -9,18 +9,22 @@ import 'rest_client.dart';
 
 typedef GetRequest = CreateTopic Function();
 typedef GetRequestCallback = void Function(GetRequest callback);
+typedef OnCreate = void Function();
 
 class CreateTopicDialog {
-  static Widget createButton(
-      BuildContext context, GlobalKey<ScaffoldState> scaffoldKey) {
+  static Widget createButton(BuildContext context,
+      GlobalKey<ScaffoldState> scaffoldKey, OnCreate onCreate) {
     return IconButton(
         icon: const Icon(Icons.add_circle),
         tooltip: 'Create Topic',
-        onPressed: () => CreateTopicDialog.show(context, scaffoldKey));
+        onPressed: () async {
+          await CreateTopicDialog.show(context, scaffoldKey);
+          onCreate();
+        });
   }
 
-  static void show(BuildContext ctxt, GlobalKey<ScaffoldState> scaffoldKey) {
-    showDialog(
+  static Future show(BuildContext ctxt, GlobalKey<ScaffoldState> scaffoldKey) {
+    return showDialog(
       context: ctxt,
       builder: (parentCtxt) {
         return StatefulBuilder(builder: (context, setState) {
@@ -82,12 +86,12 @@ class NewTopicForm extends StatefulWidget {
   static NewTopicFormState of(List<BuildContext> contexts) {
     final found = contexts.where((element) {
       final NewTopicFormState navigator =
-          element.findAncestorStateOfType<NewTopicFormState>();
+      element.findAncestorStateOfType<NewTopicFormState>();
       print('got $navigator');
       return navigator != null;
     });
     final NewTopicFormState navigator =
-        found.single.findAncestorStateOfType<NewTopicFormState>();
+    found.single.findAncestorStateOfType<NewTopicFormState>();
 
     assert(() {
       if (navigator == null) {

@@ -54,7 +54,7 @@ object Build {
 
     def application: List[ModuleID] = {
       // List("dev.zio" %% "zio-interop-monix" % "3.1.0.0-RC2")
-      Nil
+      List("org.apache.pdfbox" % "pdfbox" % "2.0.21")
     }
 
     def rest: List[ModuleID] = {
@@ -64,8 +64,8 @@ object Build {
         Seq(
           typesafeConfig,
           "org.http4s" %% "http4s-blaze-server" % Http4sVersion,
-          "org.http4s" %% "http4s-circe" % Http4sVersion,
           "org.http4s" %% "http4s-blaze-client" % Http4sVersion,
+          "org.http4s" %% "http4s-circe" % Http4sVersion,
           "org.http4s" %% "http4s-dsl" % Http4sVersion,
           scalaTest,
           "org.specs2" %% "specs2-core" % "4.9.4" % Test

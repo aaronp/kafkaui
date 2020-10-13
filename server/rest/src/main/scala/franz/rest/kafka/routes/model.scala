@@ -455,6 +455,7 @@ object PeekRequest {
 }
 
 case class Record(topic: String,
+                  key : String,
                   offset: Long,
                   leaderEpoch: Option[Int],
                   partition: Int,
@@ -469,6 +470,7 @@ object Record {
   def apply(value: ConsumerRecord[String, Array[Byte]]): Record = {
     Record(
       topic = value.topic,
+      key = value.key(),
       offset = value.offset,
       leaderEpoch = Try(value.leaderEpoch.get().intValue()).toOption,
       partition = value.partition,

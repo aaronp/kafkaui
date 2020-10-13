@@ -30,7 +30,7 @@ object RestRoutes extends StrictLogging {
             "error" -> Try(exp.getMessage).getOrElse("" + exp).asJson)
 
           /**
-           * This is a hack/work-around for the futter http package which
+           * This is a hack/work-around for the flutter http package which
            * swallows the body for non-successful responses
            */
           Response(Status(210, "Server Error")).withEntity(body)

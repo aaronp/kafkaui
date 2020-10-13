@@ -102,9 +102,14 @@ class RecordDataTableSource extends DataTableSource {
 
 class PeekDataWidget extends StatelessWidget {
   static Widget forTopic(String topic) {
-    return ChangeNotifierProvider<RecordDataNotifier>(
-      create: (_) => RecordDataNotifier(topic, {}),
-      child: PeekDataWidget(),
+    return Column(
+      children: [
+        Text('Data for $topic:'),
+        ChangeNotifierProvider<RecordDataNotifier>(
+          create: (_) => RecordDataNotifier(topic, {}),
+          child: PeekDataWidget(),
+        ),
+      ],
     );
   }
 
@@ -143,11 +148,31 @@ class PeekDataWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final _provider = context.watch<RecordDataNotifier>();
+
+    final RecordDataNotifier _provider = context.watch<RecordDataNotifier>();
+
+    return Column(
+      children: [
+        Text('${_provider.recordList.length} records'),
+        paginatedTable(_provider, context),
+      ],
+    );
+  }
+
+  void _showDetails(BuildContext c, Record data) async =>
+      await showDialog<bool>(
+        context: c,
+        builder: (_) => CustomDialog(
+          showPadding: false,
+          child: Text('Record is ${data.base64}'),
+        ),
+      );
+
+  Widget paginatedTable(RecordDataNotifier _provider, BuildContext context) {
     final _model = _provider.recordList;
 
     if (_model.isEmpty) {
-      return const SizedBox.shrink();
+      return const Text('No Data');
     }
 
     final _src = RecordDataTableSource(
@@ -189,15 +214,6 @@ class PeekDataWidget extends StatelessWidget {
           ),
         ]);
   }
-
-  void _showDetails(BuildContext c, Record data) async =>
-      await showDialog<bool>(
-        context: c,
-        builder: (_) => CustomDialog(
-          showPadding: false,
-          child: Text('Record is ${data.base64}'),
-        ),
-      );
 }
 
 class CustomDialog extends StatelessWidget {

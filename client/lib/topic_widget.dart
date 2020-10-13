@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:kafkaui/rest_client.dart';
 
+import 'consumer_data_table.dart';
+import 'content_table.dart';
 import 'create_topic_dialog.dart';
 import 'navigation_drawer.dart';
 import 'partition_widget.dart';
@@ -12,12 +14,12 @@ void main() => runApp(
       MaterialApp(
           builder: (context, child) =>
               SafeArea(child: new Material(color: Colors.white, child: child)),
-          home: TopicWidget()),
+          home: TopicWidget(() {})),
     );
 
 class TopicWidget extends StatefulWidget {
-  TopicWidget({Key key}) : super(key: key);
-
+  TopicWidget(this.onCreate, {Key key}) : super(key: key);
+  OnCreate onCreate;
   static const path = '/topic';
 
   @override
@@ -63,7 +65,7 @@ class _TopicWidgetState extends State<TopicWidget> {
                 icon: const Icon(Icons.library_add_rounded),
                 tooltip: 'Push Data',
                 onPressed: () => PushDataDialog.show(context, _scaffoldKey, selectedTopic)),
-          CreateTopicDialog.createButton(context, _scaffoldKey)
+          CreateTopicDialog.createButton(context, _scaffoldKey, widget.onCreate)
         ],
       ),
       drawer: NavigationDrawer(),
@@ -83,7 +85,15 @@ class _TopicWidgetState extends State<TopicWidget> {
           children: [
             topicDropDown(topic),
             if (topic.isNotEmpty) PartitionsForTopicWidget(topic),
-            // if (topic.isNotEmpty) PeekDataWidget.forTopic(topic)
+            // if (topic.isNotEmpty) PeekDataWidget.forTopic(topic),
+            if (topic.isNotEmpty) Row(
+              children: [
+                Container(
+                    width : 1000,
+                    height : 1000,
+                    child: TopicContentWidget.forTopic(topic)),
+              ],
+            )
           ],
         ));
   }

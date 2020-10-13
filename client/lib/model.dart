@@ -19,6 +19,7 @@ class PeekRequest {
 class Record {
   Record(
       this.topic,
+      this.key,
       this.offset,
       this.leaderEpoch,
       this.partition,
@@ -30,6 +31,7 @@ class Record {
       this.base64);
 
   String topic;
+  String key;
   int offset;
   int leaderEpoch;
   int partition;
@@ -43,6 +45,7 @@ class Record {
   static Record fromJson(Map<String, dynamic> json) {
     return Record(
         json['topic'],
+        json['key'],
         json['offset'],
         json['leaderEpoch'],
         json['partition'],

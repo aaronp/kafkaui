@@ -63,7 +63,6 @@ publishMavenStyle := true
 lazy val root = (project in file("."))
   .aggregate(
     rest,
-    application,
     deploy,
     clientJS,
     clientJVM,
