@@ -3,12 +3,11 @@ import 'package:flutter/material.dart';
 typedef OnRowChange = void Function(int index);
 typedef OnPageChange = void Function(int index);
 
-/**
- * Credit to https://github.com/AseemWangoo/experiments_with_web
- * found from
- * https://flatteredwithflutter.com/using-paginateddatatable-in-flutter-web/
- *
- */
+/// Credit to https://github.com/AseemWangoo/experiments_with_web
+/// found from
+///
+/// https://flatteredwithflutter.com/using-paginateddatatable-in-flutter-web/
+///
 class CustomPaginatedTable extends StatelessWidget {
   const CustomPaginatedTable({
     Key key,
@@ -94,24 +93,34 @@ class CustomPaginatedTable extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext ctxt) {
     //
-    return Scrollbar(
-      child: ConstrainedBox(
+    return LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints viewportConstraints) {
+      return SingleChildScrollView(
+          child: ConstrainedBox(
+        constraints: BoxConstraints(
+          // minHeight: viewportConstraints.maxHeight,
+          maxHeight: 1000,
+        ),
         child: PaginatedDataTable(
           actions: _fetchActions,
           columns: _fetchDataColumns,
           header: _fetchHeader,
           onRowsPerPageChanged: onRowChanged,
-          onPageChanged : onNewPage,
+          onPageChanged: onNewPage,
           rowsPerPage: rowsPerPage,
-          availableRowsPerPage : <int>[rowsPerPage, rowsPerPage * 2, rowsPerPage * 5, rowsPerPage * 10],
+          availableRowsPerPage: <int>[
+            rowsPerPage,
+            rowsPerPage * 2,
+            rowsPerPage * 5,
+            rowsPerPage * 10
+          ],
           source: _fetchDataTableSource,
           sortColumnIndex: sortColumnIndex,
           sortAscending: sortColumnAsc,
         ),
-        constraints: const BoxConstraints.expand(width: double.maxFinite),
-      ),
-    );
+      ));
+    });
   }
 }

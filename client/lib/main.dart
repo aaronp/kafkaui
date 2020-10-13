@@ -39,7 +39,7 @@ class KafkaUIApp extends StatelessWidget {
           HomeWidget.path: (context) => HomeWidget(),
           ConfigWidget.path: (context) => ConfigWidget(title: 'Config'),
           ListTopicsWidget.path: (context) => ListTopicsWidget(),
-          TopicWidget.path: (context) => TopicWidget(),
+          TopicWidget.path: (context) => TopicWidget(() {}),
           TopicsWidget.path: (context) => TopicsWidget()
         });
   }

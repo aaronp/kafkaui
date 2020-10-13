@@ -16,6 +16,12 @@ class _TopicsWidgetState extends State<TopicsWidget> {
   final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
   Key _listTopicsKey = ValueKey('xyz');
 
+  void refresh() {
+    setState(() {
+      _listTopicsKey =
+          ValueKey('${DateTime.now().millisecondsSinceEpoch}');
+    });
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -23,14 +29,11 @@ class _TopicsWidgetState extends State<TopicsWidget> {
       appBar: AppBar(
         title: Text('Kafka'),
         actions: [
-          CreateTopicDialog.createButton(context, _scaffoldKey),
+          CreateTopicDialog.createButton(context, _scaffoldKey, () => refresh()),
           IconButton(
               icon: const Icon(Icons.refresh),
               tooltip: 'Refresh',
-              onPressed: () => setState(() {
-                    _listTopicsKey =
-                        ValueKey('${DateTime.now().millisecondsSinceEpoch}');
-                  }))
+              onPressed: () => refresh())
         ],
       ),
       drawer: NavigationDrawer(),
