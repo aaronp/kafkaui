@@ -10,12 +10,13 @@ import zio.{Task, UIO, ZIO}
 import cats.implicits._
 import zio.interop.catz._
 import scala.util.Try
+import org.http4s.circe.CirceEntityCodec._
 
 /**
  * We save kafka configs against a name on the server-size
  */
 object ConfigRoute {
-
+  import taskDsl._
 
   object ConfigNameParam extends OptionalQueryParamDecoderMatcher[String]("name")
 
@@ -25,22 +26,18 @@ object ConfigRoute {
   }
 
   /**
-   *
+   * A Route which will return the configuration value (represented as json) when given a particular path
    * @param configLookup the lookup function
    */
   def configForName(configLookup: Option[String] => Task[Option[Config]])(implicit runtime: EnvRuntime): HttpRoutes[Task] = {
-    import taskDsl._
     HttpRoutes.of[Task] {
       case _@GET -> Root / "config" :? ConfigNameParam(configName) =>
         val response: ZIO[Any, Throwable, Response[Task]] = configLookup(configName).flatMap {
           case Some(config) =>
-            import org.http4s.circe.CirceEntityCodec._
-            //            implicit val ee = EntityEncoder.stringEncoder
-            for {
-              c <- Task.fromTry(configJson(config))
-            } yield Response(Status.Ok).withEntity(c)
-          case None =>
-            NotFound()
+            Task.fromTry(configJson(config)).map { cfg =>
+              Response(Status.Ok).withEntity(cfg)
+            }
+          case None => NotFound()
         }
         response
     }
@@ -50,7 +47,6 @@ object ConfigRoute {
    *
    */
   def saveConfig(onSave: ConfigService.SaveRequest => UIO[Either[String, Unit]])(implicit runtime: EnvRuntime): HttpRoutes[Task] = {
-    import taskDsl._
     HttpRoutes.of[Task] {
       case req@POST -> Root / "config" / configName if ConfigService.nameIsOk(configName) =>
 
